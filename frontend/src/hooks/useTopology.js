@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
 import { topologyService } from '../services/topologyService';
 import { algorithmService } from '../services/algorithmService';
+import { generateSimulationSnapshots } from '../utils/simulationHelpers';
 
 const DEFAULT_SOURCE_NODE = {
   id: 'S',
@@ -61,13 +62,19 @@ export const useTopology = (showToast) => {
   const [isSaving, setIsSaving] = useState(false);
   const [pendingConnection, setPendingConnection] = useState(null);
 
-  // Module 2 Algorithm Engine State
+  // Module 2 & 3 State
   const [dijkstraResult, setDijkstraResult] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isTopologyModified, setIsTopologyModified] = useState(false);
 
+  // Simulation mode
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationSnapshots, setSimulationSnapshots] = useState([]);
+
   // Invalidate algorithm result when graph changes
   const invalidateAlgorithmResult = useCallback(() => {
+    setIsSimulating(false);
+    setSimulationSnapshots([]);
     if (dijkstraResult) {
       setDijkstraResult(null);
       setIsTopologyModified(true);
@@ -105,6 +112,8 @@ export const useTopology = (showToast) => {
       setHasUnsavedChanges(false);
       setDijkstraResult(null);
       setIsTopologyModified(false);
+      setIsSimulating(false);
+      setSimulationSnapshots([]);
       showToast('Network topology loaded from database.', 'success');
     } catch (err) {
       console.warn('Backend unavailable, using default initial network topology:', err.message);
@@ -120,9 +129,11 @@ export const useTopology = (showToast) => {
     fetchTopology();
   }, [fetchTopology]);
 
-  // Handle node position changes / drag
+  // Handle node position changes / drag (disabled during simulation)
   const onNodesChange = useCallback(
     (changes) => {
+      if (isSimulating) return;
+
       setNodes((nds) => {
         const updated = applyNodeChanges(changes, nds);
         return updated.map((node) => {
@@ -132,19 +143,21 @@ export const useTopology = (showToast) => {
           return node;
         });
       });
-      // Detect movement to mark unsaved and invalidate path
+
       const hasMovement = changes.some((c) => c.type === 'position' && c.dragging);
       if (hasMovement) {
         setHasUnsavedChanges(true);
         invalidateAlgorithmResult();
       }
     },
-    [invalidateAlgorithmResult]
+    [isSimulating, invalidateAlgorithmResult]
   );
 
   // Handle edge changes
   const onEdgesChange = useCallback(
     (changes) => {
+      if (isSimulating) return;
+
       setEdges((eds) => applyEdgeChanges(changes, eds));
       const hasRemoval = changes.some((c) => c.type === 'remove');
       if (hasRemoval) {
@@ -152,7 +165,7 @@ export const useTopology = (showToast) => {
         invalidateAlgorithmResult();
       }
     },
-    [invalidateAlgorithmResult]
+    [isSimulating, invalidateAlgorithmResult]
   );
 
   // Generate unique sequential router ID without duplicates
@@ -174,6 +187,8 @@ export const useTopology = (showToast) => {
 
   // Add intermediate router
   const addRouter = useCallback(() => {
+    if (isSimulating) return;
+
     if (nodes.length >= 50) {
       showToast('Network size limit reached. Maximum 50 routers permitted.', 'error');
       return;
@@ -204,11 +219,13 @@ export const useTopology = (showToast) => {
     setHasUnsavedChanges(true);
     invalidateAlgorithmResult();
     showToast(`Added intermediate router ${nextId}.`, 'success');
-  }, [nodes, getNextRouterId, showToast, invalidateAlgorithmResult]);
+  }, [isSimulating, nodes, getNextRouterId, showToast, invalidateAlgorithmResult]);
 
   // Delete router
   const deleteNode = useCallback(
     (nodeId) => {
+      if (isSimulating) return;
+
       if (nodeId === 'S' || nodeId === 'D') {
         showToast('Fixed endpoints (Source S and Destination D) cannot be deleted.', 'error');
         return;
@@ -224,12 +241,14 @@ export const useTopology = (showToast) => {
       invalidateAlgorithmResult();
       showToast(`Router ${nodeId} and connected links removed.`, 'info');
     },
-    [selectedNodeId, showToast, invalidateAlgorithmResult]
+    [isSimulating, selectedNodeId, showToast, invalidateAlgorithmResult]
   );
 
   // Initiating connection between router handles
   const onConnect = useCallback(
     (connection) => {
+      if (isSimulating) return;
+
       const { source, target } = connection;
 
       if (source === target) {
@@ -258,7 +277,7 @@ export const useTopology = (showToast) => {
         targetLabel: targetNode?.data?.label || target,
       });
     },
-    [edges, nodes, showToast]
+    [isSimulating, edges, nodes, showToast]
   );
 
   // Confirm connection weight & direction from modal
@@ -293,6 +312,8 @@ export const useTopology = (showToast) => {
   // Update edge weight
   const updateEdgeWeight = useCallback(
     (edgeId, newWeight) => {
+      if (isSimulating) return;
+
       setEdges((prev) =>
         prev.map((edge) => {
           if (edge.id === edgeId) {
@@ -311,12 +332,14 @@ export const useTopology = (showToast) => {
       invalidateAlgorithmResult();
       showToast(`Link cost updated to ${newWeight}.`, 'success');
     },
-    [showToast, invalidateAlgorithmResult]
+    [isSimulating, showToast, invalidateAlgorithmResult]
   );
 
   // Update edge direction
   const updateEdgeDirection = useCallback(
     (edgeId, newDirection) => {
+      if (isSimulating) return;
+
       setEdges((prev) =>
         prev.map((edge) => {
           if (edge.id === edgeId) {
@@ -335,12 +358,14 @@ export const useTopology = (showToast) => {
       invalidateAlgorithmResult();
       showToast(`Link direction set to ${newDirection === 'ONE_WAY' ? 'One-Way' : 'Bidirectional'}.`, 'info');
     },
-    [showToast, invalidateAlgorithmResult]
+    [isSimulating, showToast, invalidateAlgorithmResult]
   );
 
   // Delete edge
   const deleteEdge = useCallback(
     (edgeId) => {
+      if (isSimulating) return;
+
       setEdges((prev) => prev.filter((e) => e.id !== edgeId));
       if (selectedEdgeId === edgeId) {
         setSelectedEdgeId(null);
@@ -349,7 +374,7 @@ export const useTopology = (showToast) => {
       invalidateAlgorithmResult();
       showToast('Communication link removed.', 'info');
     },
-    [selectedEdgeId, showToast, invalidateAlgorithmResult]
+    [isSimulating, selectedEdgeId, showToast, invalidateAlgorithmResult]
   );
 
   // Save current topology to MongoDB
@@ -453,7 +478,7 @@ export const useTopology = (showToast) => {
   }, [showToast, invalidateAlgorithmResult]);
 
   // -------------------------------------------------------------
-  // DIJKSTRA ALGORITHM CALCULATION
+  // DIJKSTRA CALCULATION & SIMULATION INITIALIZATION
   // -------------------------------------------------------------
   const calculateDijkstra = useCallback(async () => {
     setIsCalculating(true);
@@ -468,99 +493,52 @@ export const useTopology = (showToast) => {
       setDijkstraResult(result);
       setIsTopologyModified(false);
 
-      if (result.reachable && result.shortestPath.length > 0) {
-        showToast(
-          `Shortest path: ${result.shortestPath.join(' → ')} (Cost: ${result.totalCost} units)`,
-          'success',
-          5000
-        );
-      } else {
-        showToast(
-          'Destination router (D) is unreachable from Source (S).',
-          'error',
-          5000
-        );
-      }
+      // Generate deterministic snapshots from trace
+      const snapshots = generateSimulationSnapshots(nodes, edges, result.steps, result);
+      setSimulationSnapshots(snapshots);
+
+      return { result, snapshots };
     } catch (err) {
       console.error('Dijkstra calculation error:', err);
       showToast(err.message || 'Error executing Dijkstra calculation.', 'error');
+      return null;
     } finally {
       setIsCalculating(false);
     }
   }, [nodes, edges, showToast]);
 
+  // Start Step-by-Step Simulation Mode
+  const startSimulation = useCallback(async () => {
+    let snaps = simulationSnapshots;
+    if (!dijkstraResult || snaps.length === 0 || isTopologyModified) {
+      const calc = await calculateDijkstra();
+      if (!calc) return;
+      snaps = calc.snapshots;
+    }
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+    setIsSimulating(true);
+    showToast('Entered step-by-step simulation mode.', 'info');
+  }, [simulationSnapshots, dijkstraResult, isTopologyModified, calculateDijkstra, showToast]);
+
+  // Exit Simulation Mode
+  const exitSimulation = useCallback(() => {
+    setIsSimulating(false);
+    showToast('Returned to topology editor.', 'info');
+  }, [showToast]);
+
   // Reset algorithm result / remove highlighting
   const resetAlgorithmResult = useCallback(() => {
+    setIsSimulating(false);
     setDijkstraResult(null);
+    setSimulationSnapshots([]);
     setIsTopologyModified(false);
     showToast('Cleared shortest path highlighting and results.', 'info');
   }, [showToast]);
 
-  // Compute sets for active shortest path visualization
-  const shortestPathNodeIds = useMemo(() => {
-    if (!dijkstraResult?.reachable || !Array.isArray(dijkstraResult?.shortestPath)) {
-      return new Set();
-    }
-    return new Set(dijkstraResult.shortestPath);
-  }, [dijkstraResult]);
-
-  const shortestPathEdgeIds = useMemo(() => {
-    if (!dijkstraResult?.reachable || !Array.isArray(dijkstraResult?.shortestPath)) {
-      return new Set();
-    }
-    const edgeSet = new Set(dijkstraResult.shortestPathEdges || []);
-
-    // Also match consecutive router pairs in case of bidirectional link orientation
-    const path = dijkstraResult.shortestPath;
-    for (let i = 0; i < path.length - 1; i++) {
-      const u = path[i];
-      const v = path[i + 1];
-      const found = edges.find(
-        (e) =>
-          (e.source === u && e.target === v) ||
-          (e.data?.direction === 'BIDIRECTIONAL' && e.source === v && e.target === u)
-      );
-      if (found) {
-        edgeSet.add(found.id);
-      }
-    }
-
-    return edgeSet;
-  }, [dijkstraResult, edges]);
-
-  const isAnyPathActive = dijkstraResult !== null && dijkstraResult.reachable;
-
-  // Enrich nodes with shortest path highlight flags
-  const flowNodes = useMemo(() => {
-    return nodes.map((node) => ({
-      ...node,
-      selected: node.id === selectedNodeId,
-      data: {
-        ...node.data,
-        isOnShortestPath: shortestPathNodeIds.has(node.id),
-        isAnyPathActive,
-      },
-    }));
-  }, [nodes, selectedNodeId, shortestPathNodeIds, isAnyPathActive]);
-
-  // Enrich edges with shortest path highlight flags
-  const flowEdges = useMemo(() => {
-    return edges.map((edge) => ({
-      ...edge,
-      selected: edge.id === selectedEdgeId,
-      data: {
-        ...edge.data,
-        isOnShortestPath: shortestPathEdgeIds.has(edge.id),
-        isAnyPathActive,
-      },
-    }));
-  }, [edges, selectedEdgeId, shortestPathEdgeIds, isAnyPathActive]);
-
   return {
-    nodes: flowNodes,
-    rawNodes: nodes,
-    edges: flowEdges,
-    rawEdges: edges,
+    nodes,
+    edges,
     selectedNodeId,
     selectedEdgeId,
     hasUnsavedChanges,
@@ -569,6 +547,8 @@ export const useTopology = (showToast) => {
     isCalculating,
     dijkstraResult,
     isTopologyModified,
+    isSimulating,
+    simulationSnapshots,
     pendingConnection,
     setSelectedNodeId,
     setSelectedEdgeId,
@@ -587,6 +567,8 @@ export const useTopology = (showToast) => {
     clearNetwork,
     fetchTopology,
     calculateDijkstra,
+    startSimulation,
+    exitSimulation,
     resetAlgorithmResult,
   };
 };

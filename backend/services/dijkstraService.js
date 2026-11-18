@@ -120,11 +120,21 @@ export const findShortestPath = ({
       distance: isSource ? 0 : null,
       predecessor: null,
       isSource,
+      queueSnapshot: [],
     });
   }
 
   // Insert Source S into min-heap with distance 0
   pq.insert({ nodeId: sourceId, distance: 0 });
+
+  steps.push({
+    sequence: ++seq,
+    type: 'QUEUE_INSERTED',
+    nodeId: sourceId,
+    distance: 0,
+    isInitial: true,
+    queueSnapshot: pq.getSnapshot(),
+  });
 
   // Step B & C: Main Dijkstra Relaxation Loop
   while (!pq.isEmpty()) {
@@ -140,6 +150,7 @@ export const findShortestPath = ({
         nodeId: currentId,
         staleDistance: currentDist,
         currentDistance: distances.get(currentId),
+        queueSnapshot: pq.getSnapshot(),
       });
       continue;
     }
@@ -151,6 +162,7 @@ export const findShortestPath = ({
         nodeId: currentId,
         staleDistance: currentDist,
         currentDistance: distances.get(currentId),
+        queueSnapshot: pq.getSnapshot(),
       });
       continue;
     }
@@ -167,6 +179,7 @@ export const findShortestPath = ({
       nodeId: currentId,
       currentDistance: currentDist,
       visitOrder: orderNum,
+      queueSnapshot: pq.getSnapshot(),
     });
 
     // Step C: Examine and Relax Outgoing Edges
@@ -189,6 +202,7 @@ export const findShortestPath = ({
           candidateDistance: Math.round((currentDist + edgeWeight) * 100) / 100,
           neighborCurrentDistance: distances.get(neighborId),
           alreadyFinalized: true,
+          queueSnapshot: pq.getSnapshot(),
         });
         continue;
       }
@@ -207,9 +221,10 @@ export const findShortestPath = ({
         candidateDistance,
         neighborCurrentDistance: previousDistance === Infinity ? null : previousDistance,
         alreadyFinalized: false,
+        queueSnapshot: pq.getSnapshot(),
       });
 
-      // Relaxation condition: strictly strictly smaller to ensure deterministic tie handling
+      // Relaxation condition: strictly smaller to ensure deterministic tie handling
       if (candidateDistance < previousDistance) {
         distances.set(neighborId, candidateDistance);
         predecessor.set(neighborId, currentId);
@@ -224,6 +239,7 @@ export const findShortestPath = ({
           previousDistance: previousDistance === Infinity ? null : previousDistance,
           newDistance: candidateDistance,
           predecessor: currentId,
+          queueSnapshot: pq.getSnapshot(),
         });
       } else {
         steps.push({
@@ -234,6 +250,7 @@ export const findShortestPath = ({
           edgeId,
           candidateDistance,
           retainedDistance: previousDistance === Infinity ? null : previousDistance,
+          queueSnapshot: pq.getSnapshot(),
         });
       }
     }
@@ -244,6 +261,7 @@ export const findShortestPath = ({
       nodeId: currentId,
       finalDistance: currentDist,
       visitOrder: orderNum,
+      queueSnapshot: pq.getSnapshot(),
     });
   }
 
@@ -252,6 +270,7 @@ export const findShortestPath = ({
     type: 'ALGORITHM_COMPLETE',
     totalSteps: seq,
     finalizedCount: finalized.size,
+    queueSnapshot: [],
   });
 
   // Step E: Reconstruct the Shortest Path
@@ -295,9 +314,43 @@ export const findShortestPath = ({
         }
       }
     } else {
-      // Destination was marked reachable but path didn't trace back to source (integrity fallback)
       shortestPath = [];
       totalCost = null;
+    }
+  }
+
+  // Construct Shortest-Path Tree (SPT) rooted at Source for all reachable nodes
+  const shortestPathSet = new Set(shortestPath);
+  const shortestPathTree = [];
+
+  for (const node of nodes) {
+    if (node.id === sourceId) continue;
+    const pred = predecessor.get(node.id);
+    const dist = distances.get(node.id);
+    if (pred && dist !== undefined && dist !== Infinity) {
+      const predDist = distances.get(pred);
+      const edgeWeight = Math.round((dist - (predDist || 0)) * 100) / 100;
+
+      // Find original edge matching pred -> node
+      const originalEdge = edges.find(
+        (e) =>
+          (e.source === pred && e.target === node.id) ||
+          (e.direction === 'BIDIRECTIONAL' && e.source === node.id && e.target === pred)
+      );
+
+      const isDestBranch =
+        shortestPathSet.has(pred) &&
+        shortestPathSet.has(node.id) &&
+        shortestPath.indexOf(node.id) === shortestPath.indexOf(pred) + 1;
+
+      shortestPathTree.push({
+        id: `spt-${pred}-${node.id}`,
+        source: pred,
+        target: node.id,
+        weight: edgeWeight,
+        originalEdgeId: originalEdge?.id || null,
+        isDestinationPath: isDestBranch,
+      });
     }
   }
 
@@ -322,6 +375,7 @@ export const findShortestPath = ({
     reachable: isReachable && shortestPath.length > 0,
     shortestPath,
     shortestPathEdges,
+    shortestPathTree,
     totalCost,
     distanceTable,
     visitedOrder: visitedOrderList,
@@ -336,4 +390,3 @@ export const findShortestPath = ({
     },
   };
 };
-

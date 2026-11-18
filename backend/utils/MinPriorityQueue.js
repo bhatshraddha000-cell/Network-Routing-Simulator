@@ -135,7 +135,6 @@ export class MinPriorityQueue {
     }
 
     const minElement = this.heap[0];
-    // Move last element to root and sift down
     this.heap[0] = this.heap.pop();
     this.#bubbleDown(0);
 
@@ -172,5 +171,14 @@ export class MinPriorityQueue {
   clear() {
     this.heap = [];
   }
-}
 
+  /**
+   * Returns an array snapshot of all elements in the priority queue,
+   * sorted in priority order (lowest distance first).
+   */
+  getSnapshot() {
+    return [...this.heap]
+      .sort((a, b) => a.distance - b.distance)
+      .map((item) => ({ nodeId: item.nodeId, distance: item.distance }));
+  }
+}

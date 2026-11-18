@@ -27,10 +27,15 @@ export const NetworkCanvas = ({
   onNodeClick,
   onEdgeClick,
   onPaneClick,
+  isSimulationActive = false,
 }) => {
-  // MiniMap node color mapper
+  // MiniMap node color mapper reflecting simulation state
   const nodeColor = useCallback((node) => {
-    if (node.data?.isOnShortestPath) return '#38BDF8';
+    const simState = node.data?.simState;
+    if (simState === 'shortestPath' || node.data?.isOnShortestPath) return '#22C55E';
+    if (simState === 'current') return '#38BDF8';
+    if (simState === 'visited') return '#A855F7';
+    if (simState === 'unreachable') return '#64748B';
     if (node.id === 'S' || node.data?.type === 'source') return '#22C55E';
     if (node.id === 'D' || node.data?.type === 'destination') return '#F97316';
     return '#3B82F6';
@@ -40,15 +45,20 @@ export const NetworkCanvas = ({
   const formattedEdges = useMemo(() => {
     return edges.map((edge) => {
       const isOneWay = edge.data?.direction === 'ONE_WAY';
+      const simEdgeState = edge.data?.simEdgeState;
       const isOnPath = Boolean(edge.data?.isOnShortestPath);
       const isSelected = Boolean(edge.selected);
 
       let markerColor = '#64748B';
-      if (isOnPath) {
+      if (simEdgeState === 'shortestPath' || isOnPath) {
+        markerColor = '#22C55E';
+      } else if (simEdgeState === 'examining') {
+        markerColor = '#FBBF24';
+      } else if (simEdgeState === 'relaxed') {
         markerColor = '#38BDF8';
       } else if (isSelected) {
         markerColor = '#38BDF8';
-      } else if (edge.data?.isAnyPathActive) {
+      } else if (edge.data?.isAnyPathActive || isSimulationActive) {
         markerColor = '#334155';
       }
 
@@ -65,7 +75,7 @@ export const NetworkCanvas = ({
           : undefined,
       };
     });
-  }, [edges]);
+  }, [edges, isSimulationActive]);
 
   return (
     <div className="flex-1 h-full w-full relative bg-[#0B1220]">
@@ -74,12 +84,15 @@ export const NetworkCanvas = ({
         edges={formattedEdges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onConnect={onConnect}
-        onNodeClick={onNodeClick}
-        onEdgeClick={onEdgeClick}
+        onNodesChange={isSimulationActive ? undefined : onNodesChange}
+        onEdgesChange={isSimulationActive ? undefined : onEdgesChange}
+        onConnect={isSimulationActive ? undefined : onConnect}
+        onNodeClick={isSimulationActive ? undefined : onNodeClick}
+        onEdgeClick={isSimulationActive ? undefined : onEdgeClick}
         onPaneClick={onPaneClick}
+        nodesDraggable={!isSimulationActive}
+        nodesConnectable={!isSimulationActive}
+        elementsSelectable={!isSimulationActive}
         connectionMode={ConnectionMode.Loose}
         fitView
         fitViewOptions={{ padding: 0.2 }}
