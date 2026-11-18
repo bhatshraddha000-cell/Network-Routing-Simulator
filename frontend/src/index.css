@@ -1,0 +1,68 @@
+@import '@xyflow/react/dist/style.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styling for React Flow to match dark theme */
+.react-flow__background {
+  background-color: #0B1220;
+}
+
+.react-flow__controls {
+  background: #111C2F;
+  border: 1px solid #24344D;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.react-flow__controls-button {
+  background: #111C2F;
+  border-bottom: 1px solid #24344D;
+  fill: #94A3B8;
+  color: #94A3B8;
+}
+
+.react-flow__controls-button:hover {
+  background: #19263A;
+  fill: #38BDF8;
+  color: #38BDF8;
+}
+
+.react-flow__minimap {
+  background-color: #111C2F !important;
+  border: 1px solid #24344D !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #0B1220;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.react-flow__handle:hover {
+  transform: scale(1.3);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111C2F;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #24344D;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #38BDF8;
+}
