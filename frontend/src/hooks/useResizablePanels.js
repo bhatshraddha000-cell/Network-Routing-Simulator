@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 export const LEFT_SIDEBAR_MIN = 220;
 export const LEFT_SIDEBAR_DEFAULT = 340;
-export const LEFT_SIDEBAR_MAX = 480;
+export const LEFT_SIDEBAR_MAX = 500;
 
 export const RIGHT_SIDEBAR_MIN = 250;
 export const RIGHT_SIDEBAR_DEFAULT = 320;
-export const RIGHT_SIDEBAR_MAX = 450;
+export const RIGHT_SIDEBAR_MAX = 500;
 
 export const MIN_CANVAS_WIDTH = 320;
 
@@ -17,7 +17,7 @@ const STORAGE_KEY_LEFT_COLLAPSED = 'netroute_left_sidebar_collapsed';
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
 export const useResizablePanels = () => {
-  // 1. Initial State from localStorage with safe validation
+  // 1. Initial State from localStorage with safe validation against [MIN, MAX]
   const [leftWidth, setLeftWidth] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_LEFT_WIDTH);
@@ -72,16 +72,14 @@ export const useResizablePanels = () => {
   const [isLeftDrawerOpen, setIsLeftDrawerOpen] = useState(false);
   const [isRightDrawerOpen, setIsRightDrawerOpen] = useState(false);
 
-  // Refs for tracking drag coordinates without stale closures
+  // Drag session reference storing frozen start coordinates and dimensions
   const dragRef = useRef({
     startX: 0,
-    startLeftWidth: leftWidth,
-    startRightWidth: rightWidth,
-    isDraggingLeft: false,
-    isDraggingRight: false,
+    startWidth: 0,
+    otherWidth: 0,
   });
 
-  // Track window resizing and adapt panel constraints
+  // Track window resizing and prevent canvas starvation
   useEffect(() => {
     const handleResize = () => {
       const currentW = window.innerWidth;
@@ -93,7 +91,6 @@ export const useResizablePanels = () => {
           currentW - (isLeftCollapsed ? 0 : leftWidth) - rightWidth;
         if (availableCanvas < MIN_CANVAS_WIDTH) {
           const excess = MIN_CANVAS_WIDTH - availableCanvas;
-          // Reduce widths proportionally
           const newRight = Math.max(RIGHT_SIDEBAR_MIN, rightWidth - excess / 2);
           const newLeft = Math.max(LEFT_SIDEBAR_MIN, leftWidth - excess / 2);
           setLeftWidth(newLeft);
@@ -124,7 +121,7 @@ export const useResizablePanels = () => {
     } catch { }
   }, []);
 
-  // Toggle Left Collapse
+  // Toggle Left Collapse (preserves previous width for restoration on expand)
   const toggleLeftCollapse = useCallback(() => {
     setIsLeftCollapsed((prev) => {
       const next = !prev;
@@ -149,7 +146,7 @@ export const useResizablePanels = () => {
     } catch { }
   }, []);
 
-  // Reset to default widths
+  // Reset to default widths (e.g. on double click)
   const resetLeftWidth = useCallback(() => {
     saveLeftWidth(LEFT_SIDEBAR_DEFAULT);
   }, [saveLeftWidth]);
@@ -158,11 +155,11 @@ export const useResizablePanels = () => {
     saveRightWidth(RIGHT_SIDEBAR_DEFAULT);
   }, [saveRightWidth]);
 
-  // Global Pointer Events for dragging
+  // High-performance pointer drag listener (zero re-binding during active drag)
   useEffect(() => {
     if (!isDraggingLeft && !isDraggingRight) return;
 
-    // Apply global drag styles to prevent selection and show cursor
+    // Apply global drag styles to prevent text selection and enforce col-resize cursor
     const previousUserSelect = document.body.style.userSelect;
     const previousCursor = document.body.style.cursor;
     document.body.style.userSelect = 'none';
@@ -170,30 +167,34 @@ export const useResizablePanels = () => {
 
     const handlePointerMove = (e) => {
       const currentX = e.clientX;
-      const { startX, startLeftWidth, startRightWidth, isDraggingLeft, isDraggingRight } =
-        dragRef.current;
-
       const totalWinWidth = window.innerWidth;
+      const { startX, startWidth, otherWidth } = dragRef.current;
 
       if (isDraggingLeft) {
+        // Dragging right (currentX > startX) increases left sidebar width
         const deltaX = currentX - startX;
-        let candidateWidth = startLeftWidth + deltaX;
+        const candidateWidth = startWidth + deltaX;
 
         // Ensure canvas does not shrink below MIN_CANVAS_WIDTH
-        const maxAllowedByCanvas = totalWinWidth - rightWidth - MIN_CANVAS_WIDTH;
-        const upperLimit = Math.min(LEFT_SIDEBAR_MAX, Math.max(LEFT_SIDEBAR_MIN, maxAllowedByCanvas));
+        const maxAllowedByCanvas = totalWinWidth - otherWidth - MIN_CANVAS_WIDTH;
+        const upperLimit = Math.min(
+          LEFT_SIDEBAR_MAX,
+          Math.max(LEFT_SIDEBAR_MIN, maxAllowedByCanvas)
+        );
 
         const clamped = clamp(candidateWidth, LEFT_SIDEBAR_MIN, upperLimit);
         setLeftWidth(clamped);
       } else if (isDraggingRight) {
-        // Dragging right border towards left increases width; towards right decreases width
+        // Dragging left (currentX < startX => deltaX < 0) increases right sidebar width
         const deltaX = currentX - startX;
-        let candidateWidth = startRightWidth - deltaX;
+        const candidateWidth = startWidth - deltaX;
 
         // Ensure canvas does not shrink below MIN_CANVAS_WIDTH
-        const currentEffectiveLeft = isLeftCollapsed ? 0 : leftWidth;
-        const maxAllowedByCanvas = totalWinWidth - currentEffectiveLeft - MIN_CANVAS_WIDTH;
-        const upperLimit = Math.min(RIGHT_SIDEBAR_MAX, Math.max(RIGHT_SIDEBAR_MIN, maxAllowedByCanvas));
+        const maxAllowedByCanvas = totalWinWidth - otherWidth - MIN_CANVAS_WIDTH;
+        const upperLimit = Math.min(
+          RIGHT_SIDEBAR_MAX,
+          Math.max(RIGHT_SIDEBAR_MIN, maxAllowedByCanvas)
+        );
 
         const clamped = clamp(candidateWidth, RIGHT_SIDEBAR_MIN, upperLimit);
         setRightWidth(clamped);
@@ -201,8 +202,7 @@ export const useResizablePanels = () => {
     };
 
     const handlePointerUp = () => {
-      if (dragRef.current.isDraggingLeft) {
-        dragRef.current.isDraggingLeft = false;
+      if (isDraggingLeft) {
         setIsDraggingLeft(false);
         setLeftWidth((final) => {
           try {
@@ -212,8 +212,7 @@ export const useResizablePanels = () => {
         });
       }
 
-      if (dragRef.current.isDraggingRight) {
-        dragRef.current.isDraggingRight = false;
+      if (isDraggingRight) {
         setIsDraggingRight(false);
         setRightWidth((final) => {
           try {
@@ -230,53 +229,50 @@ export const useResizablePanels = () => {
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
     window.addEventListener('pointercancel', handlePointerUp);
+    window.addEventListener('blur', handlePointerUp);
 
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
       window.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('blur', handlePointerUp);
       document.body.style.userSelect = previousUserSelect;
       document.body.style.cursor = previousCursor;
     };
-  }, [isDraggingLeft, isDraggingRight, leftWidth, rightWidth, isLeftCollapsed]);
+  }, [isDraggingLeft, isDraggingRight]);
 
-  // Initiate Left Drag
+  // Initiate Left Drag Session
   const startDraggingLeft = useCallback(
     (e) => {
       e.preventDefault();
       dragRef.current = {
         startX: e.clientX,
-        startLeftWidth: leftWidth,
-        startRightWidth: rightWidth,
-        isDraggingLeft: true,
-        isDraggingRight: false,
+        startWidth: leftWidth,
+        otherWidth: rightWidth,
       };
       setIsDraggingLeft(true);
     },
     [leftWidth, rightWidth]
   );
 
-  // Initiate Right Drag
+  // Initiate Right Drag Session
   const startDraggingRight = useCallback(
     (e) => {
       e.preventDefault();
       dragRef.current = {
         startX: e.clientX,
-        startLeftWidth: leftWidth,
-        startRightWidth: rightWidth,
-        isDraggingLeft: false,
-        isDraggingRight: true,
+        startWidth: rightWidth,
+        otherWidth: isLeftCollapsed ? 0 : leftWidth,
       };
       setIsDraggingRight(true);
     },
-    [leftWidth, rightWidth]
+    [rightWidth, leftWidth, isLeftCollapsed]
   );
 
   // Keyboard shortcut Ctrl+B or Cmd+B to toggle left sidebar
   useEffect(() => {
     const handleKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
-        // Prevent default browser bookmark shortcut
         e.preventDefault();
         toggleLeftCollapse();
       }
@@ -314,4 +310,3 @@ export const useResizablePanels = () => {
     saveRightWidth,
   };
 };
-

@@ -355,7 +355,11 @@ const NetworkEditorContent = ({
       {/* 1. Desktop Left Sidebar (Resizable & Collapsible) */}
       {!isLeftCollapsed && (
         <aside
-          style={{ width: `${leftWidth}px`, minWidth: `${leftWidth}px` }}
+          style={{
+            width: `${leftWidth}px`,
+            minWidth: `${leftWidth}px`,
+            maxWidth: `${leftWidth}px`,
+          }}
           className="hidden md:flex flex-col h-full bg-[#111C2F] shrink-0 overflow-hidden relative z-10"
         >
           <Sidebar
@@ -377,18 +381,16 @@ const NetworkEditorContent = ({
 
       {/* 2. Left Resize Handle (Desktop only, when left sidebar is expanded) */}
       {!isLeftCollapsed && (
-        <div className="hidden md:flex h-full items-center">
-          <ResizeHandle
-            side="left"
-            isDragging={isDraggingLeft}
-            onPointerDown={startDraggingLeft}
-            onDoubleClick={resetLeftWidth}
-          />
-        </div>
+        <ResizeHandle
+          side="left"
+          isDragging={isDraggingLeft}
+          onPointerDown={startDraggingLeft}
+          onDoubleClick={resetLeftWidth}
+        />
       )}
 
       {/* 3. Center Canvas Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative min-w-[320px]">
         {/* Desktop Expand Button when Left Sidebar is Collapsed */}
         {isLeftCollapsed && (
           <button
@@ -467,18 +469,20 @@ const NetworkEditorContent = ({
       </div>
 
       {/* 4. Right Resize Handle (Desktop only) */}
-      <div className="hidden md:flex h-full items-center">
-        <ResizeHandle
-          side="right"
-          isDragging={isDraggingRight}
-          onPointerDown={startDraggingRight}
-          onDoubleClick={resetRightWidth}
-        />
-      </div>
+      <ResizeHandle
+        side="right"
+        isDragging={isDraggingRight}
+        onPointerDown={startDraggingRight}
+        onDoubleClick={resetRightWidth}
+      />
 
       {/* 5. Desktop Right Sidebar (Resizable, Permanently Available on Desktop) */}
       <aside
-        style={{ width: `${rightWidth}px`, minWidth: `${rightWidth}px` }}
+        style={{
+          width: `${rightWidth}px`,
+          minWidth: `${rightWidth}px`,
+          maxWidth: `${rightWidth}px`,
+        }}
         className="hidden md:flex flex-col h-full bg-[#111C2F] shrink-0 overflow-hidden relative z-10"
       >
         {rightSidebarContent}

@@ -1,6 +1,11 @@
 import React from 'react';
-import { GripVertical } from 'lucide-react';
 
+/**
+ * ChatGPT-style vertical resize handle.
+ * Renders as a crisp 1px divider with an expanded invisible hit zone (9px)
+ * for effortless mouse and touch grabbing, displaying a cyan accent highlight
+ * and col-resize cursor on hover and active drag.
+ */
 export const ResizeHandle = ({
   side = 'left',
   isDragging = false,
@@ -8,10 +13,11 @@ export const ResizeHandle = ({
   onDoubleClick,
   title,
   ariaLabel,
+  className = '',
 }) => {
   const defaultTitle =
     title ||
-    `Drag to resize ${side} sidebar (Double-click to reset to default)`;
+    `Drag boundary to resize ${side} sidebar (Double-click to reset)`;
 
   return (
     <div
@@ -22,30 +28,16 @@ export const ResizeHandle = ({
       title={defaultTitle}
       onPointerDown={onPointerDown}
       onDoubleClick={onDoubleClick}
-      className={`relative z-20 group flex items-center justify-center cursor-col-resize select-none shrink-0 transition-colors ${
-        side === 'left' ? 'w-2 -mr-1' : 'w-2 -ml-1'
-      }`}
+      className={`relative z-20 group hidden md:flex items-center justify-center cursor-col-resize select-none shrink-0 h-full w-[9px] -mx-[4px] ${className}`}
     >
-      {/* Visual divider line: 1px visible line centered within the 8px hit area */}
+      {/* 1px visible divider line centered within the 9px interaction area */}
       <div
-        className={`w-px h-full transition-all duration-150 ${
+        className={`h-full pointer-events-none transition-all duration-150 ${
           isDragging
-            ? 'bg-[#38BDF8] shadow-[0_0_8px_rgba(56,189,248,0.6)] w-0.5'
-            : 'bg-[#24344D] group-hover:bg-[#38BDF8] group-hover:w-0.5'
+            ? 'w-[2px] bg-[#38BDF8] shadow-[0_0_8px_rgba(56,189,248,0.7)]'
+            : 'w-[1px] bg-[#24344D] group-hover:w-[2px] group-hover:bg-[#38BDF8] group-hover:shadow-[0_0_6px_rgba(56,189,248,0.5)]'
         }`}
       />
-
-      {/* Floating Grip indicator in the middle that appears on hover/drag */}
-      <div
-        className={`absolute top-1/2 -translate-y-1/2 flex items-center justify-center w-3.5 h-7 rounded-sm border transition-all duration-150 pointer-events-none ${
-          isDragging
-            ? 'opacity-100 bg-[#19263A] border-[#38BDF8] text-[#38BDF8] shadow-md shadow-sky-950/40'
-            : 'opacity-0 group-hover:opacity-100 bg-[#111C2F] border-[#24344D] text-[#94A3B8] group-hover:border-[#38BDF8]/60 group-hover:text-[#38BDF8]'
-        }`}
-      >
-        <GripVertical className="w-2.5 h-2.5" />
-      </div>
     </div>
   );
 };
-
