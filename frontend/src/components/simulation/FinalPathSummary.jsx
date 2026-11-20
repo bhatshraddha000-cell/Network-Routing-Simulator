@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, CheckCircle2, XCircle, Sparkles, ChevronRight, Layers } from 'lucide-react';
+import { Route, CheckCircle2, XCircle, Sparkles, ChevronRight } from 'lucide-react';
 
 export const FinalPathSummary = ({
   snapshot,
@@ -20,10 +20,10 @@ export const FinalPathSummary = ({
             <Route className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#F8FAFC]">
+            <h3 className="text-base font-bold text-[#F8FAFC]">
               Dijkstra Simulation Result
             </h3>
-            <p className="text-[11px] text-[#94A3B8]">
+            <p className="text-xs text-[#94A3B8] mt-0.5">
               Origin: <strong className="text-emerald-400">{sourceId}</strong> ➔ Target:{' '}
               <strong className="text-orange-400">{destinationId}</strong>
             </p>
@@ -32,12 +32,12 @@ export const FinalPathSummary = ({
 
         {reachable ? (
           <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold shadow-sm">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
             Optimal Path Discovered
           </span>
         ) : (
           <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-bold shadow-sm">
-            <XCircle className="w-3.5 h-3.5 text-rose-400" />
+            <XCircle className="w-4 h-4 text-rose-400" />
             Destination Unreachable
           </span>
         )}
@@ -46,9 +46,9 @@ export const FinalPathSummary = ({
       {reachable && shortestPath.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Path Sequence */}
-          <div className="md:col-span-2 p-3 bg-[#0B1220] rounded-lg border border-[#24344D] space-y-2">
-            <div className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-400" />
+          <div className="md:col-span-2 p-3.5 bg-[#0B1220] rounded-lg border border-[#24344D] space-y-2">
+            <div className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               Minimum-Cost Route Sequence
             </div>
 
@@ -64,10 +64,10 @@ export const FinalPathSummary = ({
                 return (
                   <React.Fragment key={nodeId}>
                     <span
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-mono shadow-sm flex items-center gap-1 ${badgeColor}`}
+                      className={`px-3 py-1.5 rounded-lg border text-sm font-mono shadow-sm flex items-center gap-1.5 ${badgeColor}`}
                     >
-                      <span>{nodeId}</span>
-                      <span className="text-[9px] opacity-75 font-sans">
+                      <span className="font-bold">{nodeId}</span>
+                      <span className="text-[10px] opacity-75 font-sans">
                         {isSrc ? '(Source)' : isDst ? '(Dest)' : ''}
                       </span>
                     </span>
@@ -81,49 +81,49 @@ export const FinalPathSummary = ({
           </div>
 
           {/* Minimum Total Cost */}
-          <div className="p-3 bg-[#0B1220] rounded-lg border border-[#24344D] flex flex-col justify-between">
-            <div className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider">
+          <div className="p-3.5 bg-[#0B1220] rounded-lg border border-[#24344D] flex flex-col justify-between">
+            <div className="text-xs font-bold text-[#94A3B8] uppercase tracking-wider">
               Total Minimum Cost
             </div>
             <div className="my-1">
               <span className="text-3xl font-extrabold text-emerald-400 font-mono">
                 {totalCost}
               </span>
-              <span className="text-xs text-[#94A3B8] font-medium ml-1">units</span>
+              <span className="text-sm text-[#94A3B8] font-medium ml-1.5">units</span>
             </div>
-            <div className="text-[10px] text-[#94A3B8]">
+            <div className="text-xs text-[#94A3B8]">
               {shortestPath.length - 1} communication {shortestPath.length - 1 === 1 ? 'link' : 'links'}
             </div>
           </div>
         </div>
       ) : (
-        <div className="p-3.5 bg-rose-500/10 border border-rose-500/25 rounded-lg text-xs text-rose-300 flex items-center gap-2">
+        <div className="p-3.5 bg-rose-500/10 border border-rose-500/25 rounded-lg text-sm text-rose-300 flex items-center gap-2">
           <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
           <span>No communication path exists connecting Source ({sourceId}) to Destination ({destinationId}).</span>
         </div>
       )}
 
       {/* Summary Metrics */}
-      <div className="grid grid-cols-3 gap-2 pt-1 border-t border-[#24344D] text-xs">
-        <div className="p-2 bg-[#19263A] rounded-lg text-center">
-          <div className="text-base font-bold text-[#F8FAFC] font-mono">
+      <div className="grid grid-cols-3 gap-2.5 pt-1 border-t border-[#24344D] text-sm">
+        <div className="p-2.5 bg-[#19263A] rounded-lg text-center">
+          <div className="text-lg font-bold text-[#F8FAFC] font-mono">
             {shortestPath.length > 0 ? shortestPath.length : 0}
           </div>
-          <div className="text-[10px] text-[#94A3B8]">Routers in Path</div>
+          <div className="text-xs text-[#94A3B8]">Routers in Path</div>
         </div>
 
-        <div className="p-2 bg-[#19263A] rounded-lg text-center">
-          <div className="text-base font-bold text-[#38BDF8] font-mono">
+        <div className="p-2.5 bg-[#19263A] rounded-lg text-center">
+          <div className="text-lg font-bold text-[#38BDF8] font-mono">
             {visitedList.length}
           </div>
-          <div className="text-[10px] text-[#94A3B8]">Visited Routers</div>
+          <div className="text-xs text-[#94A3B8]">Visited Routers</div>
         </div>
 
-        <div className="p-2 bg-[#19263A] rounded-lg text-center">
-          <div className="text-base font-bold text-[#F8FAFC] font-mono">
+        <div className="p-2.5 bg-[#19263A] rounded-lg text-center">
+          <div className="text-lg font-bold text-[#F8FAFC] font-mono">
             {totalRouters}
           </div>
-          <div className="text-[10px] text-[#94A3B8]">Total Network Routers</div>
+          <div className="text-xs text-[#94A3B8]">Total Network Routers</div>
         </div>
       </div>
 
@@ -131,13 +131,12 @@ export const FinalPathSummary = ({
         <button
           type="button"
           onClick={onNavigateToResults}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-slate-950 text-xs font-bold shadow-md shadow-sky-500/20 transition-all active:scale-95 cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-slate-950 text-sm font-bold shadow-md shadow-sky-500/20 transition-all active:scale-95 cursor-pointer"
         >
           <span>View Detailed Analysis & Reports</span>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-4 h-4" />
         </button>
       )}
     </div>
   );
 };
-

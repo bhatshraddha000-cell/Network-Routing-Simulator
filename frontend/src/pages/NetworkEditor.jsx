@@ -1,5 +1,12 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ReactFlowProvider, useReactFlow } from '@xyflow/react';
+import {
+  PanelLeftOpen,
+  PanelLeft,
+  Sliders,
+  Activity,
+  Layers,
+} from 'lucide-react';
 import { Navbar } from '../components/layout/Navbar';
 import { Sidebar } from '../components/layout/Sidebar';
 import { PropertiesPanel } from '../components/network/PropertiesPanel';
@@ -8,6 +15,8 @@ import { ConnectionWeightModal } from '../components/network/ConnectionWeightMod
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Toast } from '../components/common/Toast';
 import { ShortestPathResult } from '../components/network/ShortestPathResult';
+import { ResizeHandle } from '../components/layout/ResizeHandle';
+import { ResponsiveDrawer } from '../components/layout/ResponsiveDrawer';
 
 // Module 3 Simulation Components
 import { SimulationControls } from '../components/simulation/SimulationControls';
@@ -19,6 +28,7 @@ import { FinalPathSummary } from '../components/simulation/FinalPathSummary';
 
 import { useTopology } from '../hooks/useTopology';
 import { useAlgorithmSimulation } from '../hooks/useAlgorithmSimulation';
+import { useResizablePanels } from '../hooks/useResizablePanels';
 
 const NetworkEditorContent = ({
   topology: externalTopology,
@@ -113,6 +123,29 @@ const NetworkEditorContent = ({
     restartSimulation,
     setSpeed,
   } = useAlgorithmSimulation(simulationSnapshots);
+
+  // Responsive & Resizable Panels Hook
+  const {
+    leftWidth,
+    rightWidth,
+    isLeftCollapsed,
+    isDraggingLeft,
+    isDraggingRight,
+    isDragging,
+    isMobile,
+    isLeftDrawerOpen,
+    isRightDrawerOpen,
+    openLeftDrawer,
+    closeLeftDrawer,
+    openRightDrawer,
+    closeRightDrawer,
+    startDraggingLeft,
+    startDraggingRight,
+    expandLeft,
+    collapseLeft,
+    resetLeftWidth,
+    resetRightWidth,
+  } = useResizablePanels();
 
   // Selected node & edge lookup for editor mode
   const selectedNode = useMemo(
@@ -227,25 +260,171 @@ const NetworkEditorContent = ({
     [isSimulating, setSelectedNodeId, setSelectedEdgeId]
   );
 
-  const editorBody = (
-    <div className="flex flex-1 w-full h-full overflow-hidden select-none">
-      {/* Left Sidebar: Controls & List */}
-      <Sidebar
-        nodes={nodes}
-        selectedNodeId={selectedNodeId}
-        onSelectNode={handleSelectNodeFromSidebar}
-        onAddRouter={addRouter}
-        onLoadExample={loadExample}
-        onClearNetwork={() => setIsClearConfirmOpen(true)}
-        onDeleteNode={deleteNode}
-        onCalculateDijkstra={calculateDijkstra}
-        onStartSimulation={startSimulation}
-        isCalculating={isCalculating}
-        isSimulating={isSimulating}
-      />
+  const rightSidebarContent = isSimulating ? (
+    <div className="w-full h-full flex flex-col bg-[#111C2F] select-none overflow-hidden">
+      {/* Simulation Sidebar Tabs */}
+      <div className="p-3 border-b border-[#24344D] flex items-center justify-between bg-[#19263A]/40 shrink-0">
+        <span className="text-xs font-bold text-[#F8FAFC] uppercase tracking-wider">
+          Simulation Inspector
+        </span>
+        <div className="flex rounded-lg bg-[#0B1220] p-0.5 border border-[#24344D]">
+          <button
+            type="button"
+            onClick={() => setActiveSimulationTab('state')}
+            className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors cursor-pointer ${activeSimulationTab === 'state'
+                ? 'bg-[#19263A] text-[#38BDF8]'
+                : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+              }`}
+          >
+            Table & State
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSimulationTab('queue-history')}
+            className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors cursor-pointer ${activeSimulationTab === 'queue-history'
+                ? 'bg-[#19263A] text-[#38BDF8]'
+                : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+              }`}
+          >
+            Queue & History
+          </button>
+        </div>
+      </div>
 
-      {/* Center Canvas Area with Simulation Overlay / Controls */}
+      {/* Scrollable Simulation Content */}
+      <div className="p-3.5 space-y-4 flex-1 overflow-y-auto">
+        {/* Final Summary Card when completed */}
+        {currentSnapshot?.isCompleted && (
+          <FinalPathSummary
+            snapshot={currentSnapshot}
+            sourceId="S"
+            destinationId="D"
+            totalRouters={nodes.length}
+            onNavigateToResults={onNavigateToResults}
+          />
+        )}
+
+        {/* Step Explanation with Mathematical Breakdown */}
+        <AlgorithmExplanation snapshot={currentSnapshot} />
+
+        {/* Tab 1: State & Distance Table */}
+        {activeSimulationTab === 'state' && (
+          <DistanceTable
+            nodes={nodes}
+            distances={currentSnapshot?.distances || {}}
+            predecessors={currentSnapshot?.predecessors || {}}
+            nodeStates={currentSnapshot?.nodeStates || {}}
+            visitOrders={currentSnapshot?.visitOrders || {}}
+            activeNodeId={currentSnapshot?.activeNodeId}
+            activeNeighborId={currentSnapshot?.activeNeighborId}
+            sourceId="S"
+            destinationId="D"
+          />
+        )}
+
+        {/* Tab 2: Priority Queue & Event Timeline */}
+        {activeSimulationTab === 'queue-history' && (
+          <>
+            <PriorityQueuePanel
+              priorityQueue={currentSnapshot?.priorityQueue || []}
+            />
+            <ExecutionHistory
+              snapshots={simulationSnapshots}
+              currentStepIndex={currentStepIndex}
+              onSelectStep={goToStep}
+            />
+          </>
+        )}
+      </div>
+    </div>
+  ) : (
+    <PropertiesPanel
+      selectedNode={selectedNode}
+      selectedEdge={selectedEdge}
+      allNodes={nodes}
+      allEdges={edges}
+      onUpdateEdgeWeight={updateEdgeWeight}
+      onUpdateEdgeDirection={updateEdgeDirection}
+      onDeleteEdge={deleteEdge}
+      onDeleteNode={deleteNode}
+    />
+  );
+
+  const editorBody = (
+    <div className="flex flex-1 w-full h-full overflow-hidden select-none relative">
+      {/* 1. Desktop Left Sidebar (Resizable & Collapsible) */}
+      {!isLeftCollapsed && (
+        <aside
+          style={{ width: `${leftWidth}px`, minWidth: `${leftWidth}px` }}
+          className="hidden md:flex flex-col h-full bg-[#111C2F] shrink-0 overflow-hidden relative z-10"
+        >
+          <Sidebar
+            nodes={nodes}
+            selectedNodeId={selectedNodeId}
+            onSelectNode={handleSelectNodeFromSidebar}
+            onAddRouter={addRouter}
+            onLoadExample={loadExample}
+            onClearNetwork={() => setIsClearConfirmOpen(true)}
+            onDeleteNode={deleteNode}
+            onCalculateDijkstra={calculateDijkstra}
+            onStartSimulation={startSimulation}
+            isCalculating={isCalculating}
+            isSimulating={isSimulating}
+            onCollapse={collapseLeft}
+          />
+        </aside>
+      )}
+
+      {/* 2. Left Resize Handle (Desktop only, when left sidebar is expanded) */}
+      {!isLeftCollapsed && (
+        <div className="hidden md:flex h-full items-center">
+          <ResizeHandle
+            side="left"
+            isDragging={isDraggingLeft}
+            onPointerDown={startDraggingLeft}
+            onDoubleClick={resetLeftWidth}
+          />
+        </div>
+      )}
+
+      {/* 3. Center Canvas Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        {/* Desktop Expand Button when Left Sidebar is Collapsed */}
+        {isLeftCollapsed && (
+          <button
+            type="button"
+            onClick={expandLeft}
+            className="hidden md:flex absolute top-3 left-3 z-30 items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111C2F]/90 hover:bg-[#19263A] text-[#94A3B8] hover:text-[#38BDF8] border border-[#24344D] hover:border-[#38BDF8]/50 shadow-lg shadow-sky-950/40 backdrop-blur-md transition-all cursor-pointer group"
+            title="Expand left sidebar (Ctrl+B)"
+            aria-label="Expand left sidebar"
+          >
+            <PanelLeftOpen className="w-4 h-4 text-[#38BDF8] group-hover:scale-110 transition-transform" />
+            <span className="text-xs font-semibold">Routers & Controls</span>
+          </button>
+        )}
+
+        {/* Mobile Action Bar (Sticky top pills on small screens) */}
+        <div className="md:hidden absolute top-3 left-3 right-3 z-30 flex items-center justify-between gap-2 pointer-events-none">
+          <button
+            type="button"
+            onClick={openLeftDrawer}
+            className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111C2F]/95 text-[#F8FAFC] text-xs font-semibold border border-[#24344D] shadow-lg backdrop-blur-md active:scale-95 cursor-pointer"
+          >
+            <PanelLeft className="w-4 h-4 text-[#38BDF8]" />
+            <span>Controls</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={openRightDrawer}
+            className="pointer-events-auto flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#111C2F]/95 text-[#F8FAFC] text-xs font-semibold border border-[#24344D] shadow-lg backdrop-blur-md active:scale-95 cursor-pointer"
+          >
+            <Sliders className="w-4 h-4 text-[#38BDF8]" />
+            <span>{isSimulating ? 'Inspector' : 'Properties'}</span>
+          </button>
+        </div>
+
+        {/* Interactive React Flow Canvas */}
         <NetworkCanvas
           nodes={displayedNodes}
           edges={displayedEdges}
@@ -258,7 +437,7 @@ const NetworkEditorContent = ({
           isSimulationActive={isSimulating}
         />
 
-        {/* Module 3 Simulation Controls Toolbar (when simulation is active) */}
+        {/* Module 3 Simulation Controls Toolbar */}
         {isSimulating && (
           <SimulationControls
             isPlaying={isPlaying}
@@ -276,7 +455,7 @@ const NetworkEditorContent = ({
           />
         )}
 
-        {/* Module 2 Shortest Path Results Drawer (when not in simulation mode) */}
+        {/* Module 2 Shortest Path Results Drawer (in editor mode) */}
         {!isSimulating && (
           <ShortestPathResult
             result={dijkstraResult}
@@ -287,98 +466,76 @@ const NetworkEditorContent = ({
         )}
       </div>
 
-      {/* Right Sidebar: Dual-Mode (Properties Inspector OR Simulation Inspector) */}
-      {isSimulating ? (
-        <aside className="w-96 bg-[#111C2F] border-l border-[#24344D] flex flex-col h-full z-10 select-none overflow-hidden">
-          {/* Simulation Sidebar Tabs */}
-          <div className="p-3 border-b border-[#24344D] flex items-center justify-between bg-[#19263A]/40">
-            <span className="text-xs font-bold text-[#F8FAFC] uppercase tracking-wider">
-              Simulation Inspector
-            </span>
-            <div className="flex rounded-lg bg-[#0B1220] p-0.5 border border-[#24344D]">
-              <button
-                type="button"
-                onClick={() => setActiveSimulationTab('state')}
-                className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${
-                  activeSimulationTab === 'state'
-                    ? 'bg-[#19263A] text-[#38BDF8]'
-                    : 'text-[#94A3B8] hover:text-[#F8FAFC]'
-                }`}
-              >
-                Table & State
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveSimulationTab('queue-history')}
-                className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${
-                  activeSimulationTab === 'queue-history'
-                    ? 'bg-[#19263A] text-[#38BDF8]'
-                    : 'text-[#94A3B8] hover:text-[#F8FAFC]'
-                }`}
-              >
-                Queue & History
-              </button>
-            </div>
-          </div>
-
-          {/* Scrollable Simulation Content */}
-          <div className="p-3.5 space-y-4 flex-1 overflow-y-auto">
-            {/* Final Summary Card when completed */}
-            {currentSnapshot?.isCompleted && (
-              <FinalPathSummary
-                snapshot={currentSnapshot}
-                sourceId="S"
-                destinationId="D"
-                totalRouters={nodes.length}
-                onNavigateToResults={onNavigateToResults}
-              />
-            )}
-
-            {/* Step Explanation with Mathematical Breakdown */}
-            <AlgorithmExplanation snapshot={currentSnapshot} />
-
-            {/* Tab 1: State & Distance Table */}
-            {activeSimulationTab === 'state' && (
-              <DistanceTable
-                nodes={nodes}
-                distances={currentSnapshot?.distances || {}}
-                predecessors={currentSnapshot?.predecessors || {}}
-                nodeStates={currentSnapshot?.nodeStates || {}}
-                visitOrders={currentSnapshot?.visitOrders || {}}
-                activeNodeId={currentSnapshot?.activeNodeId}
-                activeNeighborId={currentSnapshot?.activeNeighborId}
-                sourceId="S"
-                destinationId="D"
-              />
-            )}
-
-            {/* Tab 2: Priority Queue & Event Timeline */}
-            {activeSimulationTab === 'queue-history' && (
-              <>
-                <PriorityQueuePanel
-                  priorityQueue={currentSnapshot?.priorityQueue || []}
-                />
-                <ExecutionHistory
-                  snapshots={simulationSnapshots}
-                  currentStepIndex={currentStepIndex}
-                  onSelectStep={goToStep}
-                />
-              </>
-            )}
-          </div>
-        </aside>
-      ) : (
-        <PropertiesPanel
-          selectedNode={selectedNode}
-          selectedEdge={selectedEdge}
-          allNodes={nodes}
-          allEdges={edges}
-          onUpdateEdgeWeight={updateEdgeWeight}
-          onUpdateEdgeDirection={updateEdgeDirection}
-          onDeleteEdge={deleteEdge}
-          onDeleteNode={deleteNode}
+      {/* 4. Right Resize Handle (Desktop only) */}
+      <div className="hidden md:flex h-full items-center">
+        <ResizeHandle
+          side="right"
+          isDragging={isDraggingRight}
+          onPointerDown={startDraggingRight}
+          onDoubleClick={resetRightWidth}
         />
+      </div>
+
+      {/* 5. Desktop Right Sidebar (Resizable, Permanently Available on Desktop) */}
+      <aside
+        style={{ width: `${rightWidth}px`, minWidth: `${rightWidth}px` }}
+        className="hidden md:flex flex-col h-full bg-[#111C2F] shrink-0 overflow-hidden relative z-10"
+      >
+        {rightSidebarContent}
+      </aside>
+
+      {/* Dragging Transparent Barrier to prevent canvas pointer capture */}
+      {isDragging && (
+        <div className="fixed inset-0 z-50 cursor-col-resize select-none bg-transparent" />
       )}
+
+      {/* Mobile Slide-in Left Drawer */}
+      <ResponsiveDrawer
+        isOpen={isLeftDrawerOpen}
+        onClose={closeLeftDrawer}
+        side="left"
+        title="Network Controls"
+      >
+        <Sidebar
+          nodes={nodes}
+          selectedNodeId={selectedNodeId}
+          onSelectNode={(id) => {
+            handleSelectNodeFromSidebar(id);
+            closeLeftDrawer();
+          }}
+          onAddRouter={addRouter}
+          onLoadExample={() => {
+            loadExample();
+            closeLeftDrawer();
+          }}
+          onClearNetwork={() => {
+            setIsClearConfirmOpen(true);
+            closeLeftDrawer();
+          }}
+          onDeleteNode={deleteNode}
+          onCalculateDijkstra={() => {
+            calculateDijkstra();
+            closeLeftDrawer();
+          }}
+          onStartSimulation={() => {
+            startSimulation();
+            closeLeftDrawer();
+          }}
+          isCalculating={isCalculating}
+          isSimulating={isSimulating}
+          onCollapse={closeLeftDrawer}
+        />
+      </ResponsiveDrawer>
+
+      {/* Mobile Slide-in Right Drawer */}
+      <ResponsiveDrawer
+        isOpen={isRightDrawerOpen}
+        onClose={closeRightDrawer}
+        side="right"
+        title={isSimulating ? 'Simulation Inspector' : 'Properties Inspector'}
+      >
+        {rightSidebarContent}
+      </ResponsiveDrawer>
 
       {/* Connection Cost & Direction Modal */}
       <ConnectionWeightModal

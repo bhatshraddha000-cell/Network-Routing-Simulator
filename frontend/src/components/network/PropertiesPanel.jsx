@@ -20,6 +20,8 @@ export const PropertiesPanel = ({
   onUpdateEdgeDirection,
   onDeleteEdge,
   onDeleteNode,
+  className = '',
+  style = {},
 }) => {
   const [editWeight, setEditWeight] = useState('');
   const [weightError, setWeightError] = useState('');
@@ -54,7 +56,10 @@ export const PropertiesPanel = ({
   };
 
   return (
-    <aside className="w-80 bg-[#111C2F] border-l border-[#24344D] flex flex-col h-full z-10 select-none overflow-y-auto">
+    <aside
+      style={style}
+      className={`w-full bg-[#111C2F] flex flex-col h-full select-none overflow-y-auto ${className}`}
+    >
       {/* Header */}
       <div className="p-4 border-b border-[#24344D] flex items-center gap-2">
         <Sliders className="w-4 h-4 text-[#38BDF8]" />

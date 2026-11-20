@@ -14,30 +14,30 @@ export const DistanceTable = ({
 }) => {
   return (
     <div className="bg-[#111C2F] rounded-xl border border-[#24344D] overflow-hidden flex flex-col h-full select-none">
-      <div className="p-3 border-b border-[#24344D] flex items-center justify-between bg-[#19263A]/40">
+      <div className="p-3.5 border-b border-[#24344D] flex items-center justify-between bg-[#19263A]/40">
         <div className="flex items-center gap-2">
           <Table className="w-4 h-4 text-[#38BDF8]" />
-          <span className="text-xs font-bold text-[#F8FAFC] uppercase tracking-wider">
+          <span className="text-sm font-bold text-[#F8FAFC] uppercase tracking-wider">
             Dynamic Distance Table
           </span>
         </div>
-        <span className="text-[10px] text-[#94A3B8] font-mono">
+        <span className="text-xs text-[#94A3B8] font-mono">
           {nodes.length} Routers
         </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto max-h-64">
-        <table className="w-full text-left text-xs">
-          <thead className="bg-[#0B1220] text-[#94A3B8] uppercase tracking-wider font-semibold border-b border-[#24344D] sticky top-0 z-10">
+      <div className="flex-1 overflow-y-auto max-h-72">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-[#0B1220] text-[#94A3B8] uppercase text-xs tracking-wider font-semibold border-b border-[#24344D] sticky top-0 z-10">
             <tr>
-              <th className="py-2 px-3">Router</th>
-              <th className="py-2 px-3 text-right">Tentative Distance</th>
-              <th className="py-2 px-3 text-center">Predecessor</th>
-              <th className="py-2 px-3 text-center">Status</th>
-              <th className="py-2 px-3 text-right">Order</th>
+              <th className="py-2.5 px-3">Router</th>
+              <th className="py-2.5 px-3 text-right">Tentative Distance</th>
+              <th className="py-2.5 px-3 text-center">Predecessor</th>
+              <th className="py-2.5 px-3 text-center">Status</th>
+              <th className="py-2.5 px-3 text-right">Order</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#19263A] font-mono">
+          <tbody className="divide-y divide-[#19263A] font-mono text-sm">
             {nodes.map((node) => {
               const id = node.id;
               const isSrc = id === sourceId;
@@ -63,34 +63,34 @@ export const DistanceTable = ({
 
               // Status badge
               let statusElem = (
-                <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-semibold uppercase bg-slate-800 text-slate-400">
+                <span className="px-2 py-0.5 rounded text-[10px] font-sans font-semibold uppercase bg-slate-800 text-slate-400">
                   UNVISITED
                 </span>
               );
 
               if (state === 'shortestPath') {
                 statusElem = (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-bold uppercase bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/40 flex items-center justify-center gap-1">
-                    <Sparkles className="w-2.5 h-2.5" />
+                  <span className="px-2 py-0.5 rounded text-[10px] font-sans font-bold uppercase bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/40 flex items-center justify-center gap-1">
+                    <Sparkles className="w-3 h-3" />
                     ROUTE
                   </span>
                 );
               } else if (state === 'current' || isCurrent) {
                 statusElem = (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-extrabold uppercase bg-[#38BDF8] text-slate-950 animate-pulse">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-sans font-extrabold uppercase bg-[#38BDF8] text-slate-950 animate-pulse">
                     CURRENT
                   </span>
                 );
               } else if (state === 'visited') {
                 statusElem = (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-bold uppercase bg-[#A855F7]/20 text-[#D8B4FE] border border-[#A855F7]/40 flex items-center justify-center gap-1">
-                    <CheckCircle2 className="w-2.5 h-2.5 text-[#C084FC]" />
+                  <span className="px-2 py-0.5 rounded text-[10px] font-sans font-bold uppercase bg-[#A855F7]/20 text-[#D8B4FE] border border-[#A855F7]/40 flex items-center justify-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-[#C084FC]" />
                     VISITED
                   </span>
                 );
               } else if (state === 'unreachable') {
                 statusElem = (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sans font-bold uppercase bg-rose-950/40 text-rose-300 border border-rose-900/40">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-sans font-bold uppercase bg-rose-950/40 text-rose-300 border border-rose-900/40">
                     UNREACHABLE
                   </span>
                 );
@@ -98,43 +98,41 @@ export const DistanceTable = ({
 
               return (
                 <tr key={id} className={`transition-colors ${rowBg}`}>
-                  {/* Router Name */}
-                  <td className="py-2 px-3 font-bold flex items-center gap-1.5">
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        isSrc
-                          ? 'bg-[#22C55E]'
-                          : isDst
-                          ? 'bg-[#F97316]'
-                          : state === 'visited'
-                          ? 'bg-[#A855F7]'
-                          : 'bg-[#3B82F6]'
-                      }`}
-                    />
-                    <span className="text-[#F8FAFC]">{node.data?.label || id}</span>
-                    {isSrc && <span className="text-[9px] text-[#22C55E] font-sans">(Src)</span>}
-                    {isDst && <span className="text-[9px] text-[#F97316] font-sans">(Dst)</span>}
+                  <td className="py-2.5 px-3 font-bold text-[#F8FAFC]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">{id}</span>
+                      {isSrc && (
+                        <span className="text-[10px] font-sans text-emerald-400 font-semibold">(S)</span>
+                      )}
+                      {isDst && (
+                        <span className="text-[10px] font-sans text-orange-400 font-semibold">(D)</span>
+                      )}
+                    </div>
                   </td>
 
-                  {/* Distance */}
-                  <td className="py-2 px-3 text-right font-bold text-[#F8FAFC]">
-                    {dist !== null && dist !== undefined ? (
-                      <span className={isNeighbor ? 'text-[#38BDF8]' : ''}>{dist}</span>
+                  <td className="py-2.5 px-3 text-right font-bold text-sm">
+                    {dist === Infinity || dist === undefined || dist === null ? (
+                      <span className="text-slate-600 font-normal">∞</span>
                     ) : (
-                      <span className="text-slate-500 font-normal">∞</span>
+                      <span className={state === 'shortestPath' ? 'text-[#22C55E]' : isCurrent ? 'text-[#38BDF8]' : 'text-[#F8FAFC]'}>
+                        {dist}
+                      </span>
                     )}
                   </td>
 
-                  {/* Predecessor */}
-                  <td className="py-2 px-3 text-center text-[#F8FAFC]">
-                    {pred ? <span className="text-[#38BDF8] font-bold">{pred}</span> : '—'}
+                  <td className="py-2.5 px-3 text-center">
+                    {pred ? (
+                      <span className="px-2 py-0.5 rounded bg-[#19263A] text-[#38BDF8] border border-[#24344D] text-xs font-semibold">
+                        {pred}
+                      </span>
+                    ) : (
+                      <span className="text-slate-600 font-normal">—</span>
+                    )}
                   </td>
 
-                  {/* Status */}
-                  <td className="py-2 px-3 text-center">{statusElem}</td>
+                  <td className="py-2.5 px-3 text-center">{statusElem}</td>
 
-                  {/* Visit Order */}
-                  <td className="py-2 px-3 text-right text-[#94A3B8]">
+                  <td className="py-2.5 px-3 text-right text-slate-400 text-xs">
                     {order ? `#${order}` : '—'}
                   </td>
                 </tr>
@@ -146,4 +144,3 @@ export const DistanceTable = ({
     </div>
   );
 };
-

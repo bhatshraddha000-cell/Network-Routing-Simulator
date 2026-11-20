@@ -63,7 +63,14 @@ export const useTopology = (showToast) => {
   const [pendingConnection, setPendingConnection] = useState(null);
 
   // Module 2 & 3 State
-  const [dijkstraResult, setDijkstraResult] = useState(null);
+  const [dijkstraResult, setDijkstraResult] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('netroute_last_result');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [isCalculating, setIsCalculating] = useState(false);
   const [isTopologyModified, setIsTopologyModified] = useState(false);
 
@@ -75,11 +82,12 @@ export const useTopology = (showToast) => {
   const invalidateAlgorithmResult = useCallback(() => {
     setIsSimulating(false);
     setSimulationSnapshots([]);
-    if (dijkstraResult) {
-      setDijkstraResult(null);
-      setIsTopologyModified(true);
-    }
-  }, [dijkstraResult]);
+    setDijkstraResult(null);
+    setIsTopologyModified(true);
+    try {
+      sessionStorage.removeItem('netroute_last_result');
+    } catch { }
+  }, []);
 
   // Keep track of unsaved changes in ref for beforeunload listener
   const unsavedChangesRef = useRef(false);
@@ -492,6 +500,11 @@ export const useTopology = (showToast) => {
 
       setDijkstraResult(result);
       setIsTopologyModified(false);
+      try {
+        sessionStorage.setItem('netroute_last_result', JSON.stringify(result));
+      } catch (e) {
+        console.warn('Could not persist dijkstra result to sessionStorage:', e);
+      }
 
       // Generate deterministic snapshots from trace
       const snapshots = generateSimulationSnapshots(nodes, edges, result.steps, result);
@@ -533,6 +546,9 @@ export const useTopology = (showToast) => {
     setDijkstraResult(null);
     setSimulationSnapshots([]);
     setIsTopologyModified(false);
+    try {
+      sessionStorage.removeItem('netroute_last_result');
+    } catch { }
     showToast('Cleared shortest path highlighting and results.', 'info');
   }, [showToast]);
 

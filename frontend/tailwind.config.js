@@ -26,6 +26,16 @@ export default {
           edge: '#64748B',
         },
       },
+      fontSize: {
+        '2xs': ['0.75rem', { lineHeight: '1rem' }],       // 12px
+        'xs': ['0.8125rem', { lineHeight: '1.125rem' }],   // 13px
+        'sm': ['0.90625rem', { lineHeight: '1.375rem' }],  // 14.5px
+        'base': ['1rem', { lineHeight: '1.5rem' }],        // 16px
+        'lg': ['1.125rem', { lineHeight: '1.75rem' }],     // 18px
+        'xl': ['1.25rem', { lineHeight: '1.75rem' }],      // 20px
+        '2xl': ['1.625rem', { lineHeight: '2.125rem' }],   // 26px
+        '3xl': ['1.875rem', { lineHeight: '2.25rem' }],    // 30px
+      },
     },
   },
   plugins: [],

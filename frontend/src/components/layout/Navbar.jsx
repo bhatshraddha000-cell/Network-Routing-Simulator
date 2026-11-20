@@ -12,7 +12,6 @@ import {
   Network,
   Cpu,
   BarChart3,
-  AlertCircle,
 } from 'lucide-react';
 
 export const Navbar = ({
@@ -45,23 +44,23 @@ export const Navbar = ({
       <div className="flex items-center gap-4 lg:gap-6">
         <div
           onClick={() => onSelectTab && onSelectTab('dashboard')}
-          className="flex items-center gap-2.5 cursor-pointer group"
+          className="flex items-center gap-3 cursor-pointer group"
           title="Go to Overview Dashboard"
         >
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#38BDF8] to-[#1D4ED8] flex items-center justify-center text-slate-950 font-black text-sm shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">
             NR
           </div>
           <div className="hidden sm:block">
-            <span className="text-sm font-bold text-[#F8FAFC] tracking-tight group-hover:text-[#38BDF8] transition-colors">
+            <span className="text-base font-bold text-[#F8FAFC] tracking-tight group-hover:text-[#38BDF8] transition-colors leading-none">
               NetRoute
             </span>
-            <span className="text-[10px] block text-[#94A3B8] -mt-1 font-mono">
+            <span className="text-xs block text-[#94A3B8] font-mono mt-0.5">
               Dijkstra Routing
             </span>
           </div>
         </div>
 
-        {/* Navigation Tabs Pill */}
+        {/* Navigation Tabs Pill - Typography upgraded to text-sm */}
         <nav className="flex items-center bg-[#0B1220] p-1 rounded-xl border border-[#24344D]">
           {navTabs.map((tab) => {
             const Icon = tab.icon;
@@ -77,13 +76,13 @@ export const Navbar = ({
                     onSelectTab(tab.id);
                   }
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-[#19263A] text-[#38BDF8] shadow-sm border border-[#38BDF8]/30'
                     : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#111C2F]'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-[#38BDF8]' : 'text-[#94A3B8]'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-[#38BDF8]' : 'text-[#94A3B8]'}`} />
                 <span className="hidden md:inline">{tab.label}</span>
               </button>
             );
@@ -92,13 +91,13 @@ export const Navbar = ({
       </div>
 
       {/* Right: Status Pill & Action Buttons */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3">
         {/* Status Pill Indicator */}
-        <div className="hidden xl:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-[#0B1220] border border-[#24344D]">
+        <div className="hidden xl:flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#0B1220] border border-[#24344D]">
           {isSimulating ? (
             <>
               <span className="w-2 h-2 rounded-full bg-[#38BDF8] animate-pulse shrink-0" />
-              <span className="text-[#38BDF8] font-bold">Simulator Active</span>
+              <span className="text-[#38BDF8]">Simulator Active</span>
             </>
           ) : isTopologyModified ? (
             <>
@@ -124,10 +123,10 @@ export const Navbar = ({
             <button
               type="button"
               onClick={onExitSimulation}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#F8FAFC] border border-[#24344D] text-xs font-bold transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#F8FAFC] border border-[#24344D] text-sm font-bold transition-all active:scale-95 cursor-pointer"
               title="Exit simulation and return to topology editor"
             >
-              <LogOut className="w-3.5 h-3.5 text-rose-400" />
+              <LogOut className="w-4 h-4 text-rose-400" />
               <span className="hidden sm:inline">Exit Simulation</span>
             </button>
 
@@ -135,10 +134,10 @@ export const Navbar = ({
               <button
                 type="button"
                 onClick={onFitView}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#24344D] text-xs font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#24344D] text-sm font-medium transition-colors cursor-pointer"
                 title="Fit view to canvas"
               >
-                <Maximize2 className="w-3.5 h-3.5" />
+                <Maximize2 className="w-4 h-4" />
               </button>
             )}
           </>
@@ -148,7 +147,7 @@ export const Navbar = ({
               type="button"
               onClick={onStartSimulation}
               disabled={isCalculating}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md active:scale-95 ${
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-all shadow-md active:scale-95 cursor-pointer ${
                 isCalculating
                   ? 'bg-sky-800 text-sky-200 cursor-wait'
                   : 'bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-slate-950 shadow-sky-500/20'
@@ -157,12 +156,12 @@ export const Navbar = ({
             >
               {isCalculating ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Preparing...</span>
                 </>
               ) : (
                 <>
-                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <Play className="w-4 h-4 fill-current" />
                   <span>Run Simulation</span>
                 </>
               )}
@@ -172,10 +171,10 @@ export const Navbar = ({
               type="button"
               onClick={onCalculateDijkstra}
               disabled={isCalculating}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#F8FAFC] border border-[#24344D] text-xs font-medium transition-colors"
+              className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#F8FAFC] border border-[#24344D] text-sm font-medium transition-colors cursor-pointer"
               title="Quick Dijkstra calculation"
             >
-              <Zap className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <Zap className="w-4 h-4 text-[#38BDF8]" />
               <span>Calculate</span>
             </button>
 
@@ -183,10 +182,10 @@ export const Navbar = ({
               <button
                 type="button"
                 onClick={onResetAlgorithmResult}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#24344D] text-xs font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#24344D] text-sm font-medium transition-colors cursor-pointer"
                 title="Clear shortest path highlighting"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <RotateCcw className="w-4 h-4" />
               </button>
             )}
 
@@ -194,20 +193,20 @@ export const Navbar = ({
               <button
                 type="button"
                 onClick={onFitView}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#24344D] text-xs font-medium transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#24344D] text-sm font-medium transition-colors cursor-pointer"
                 title="Fit view to canvas"
               >
-                <Maximize2 className="w-3.5 h-3.5" />
+                <Maximize2 className="w-4 h-4" />
               </button>
             )}
 
             <button
               type="button"
               onClick={onReload}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#24344D] text-xs font-medium transition-colors"
+              className="hidden lg:flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#94A3B8] hover:text-[#F8FAFC] border border-[#24344D] text-sm font-medium transition-colors cursor-pointer"
               title="Reload from MongoDB"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-4 h-4" />
               <span>Reload</span>
             </button>
 
@@ -215,25 +214,25 @@ export const Navbar = ({
               type="button"
               onClick={onSave}
               disabled={isSaving || !hasUnsavedChanges}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-md ${
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-bold transition-all shadow-md ${
                 hasUnsavedChanges
-                  ? 'bg-[#19263A] hover:bg-[#24344D] text-[#38BDF8] border border-[#38BDF8]/40 active:scale-95'
+                  ? 'bg-[#19263A] hover:bg-[#24344D] text-[#38BDF8] border border-[#38BDF8]/40 active:scale-95 cursor-pointer'
                   : 'bg-[#19263A] text-[#94A3B8] border border-[#24344D] cursor-default'
               }`}
             >
               {isSaving ? (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : hasUnsavedChanges ? (
                 <>
-                  <Save className="w-3.5 h-3.5" />
+                  <Save className="w-4 h-4" />
                   <span>Save</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   <span>Saved</span>
                 </>
               )}
@@ -244,9 +243,9 @@ export const Navbar = ({
             <button
               type="button"
               onClick={() => onSelectTab && onSelectTab('topology')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#F8FAFC] border border-[#24344D] text-xs font-semibold transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#F8FAFC] border border-[#24344D] text-sm font-semibold transition-colors cursor-pointer"
             >
-              <Network className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <Network className="w-4 h-4 text-[#38BDF8]" />
               <span>Edit Topology</span>
             </button>
 
@@ -254,9 +253,9 @@ export const Navbar = ({
               type="button"
               onClick={onStartSimulation}
               disabled={isCalculating}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-slate-950 text-xs font-bold shadow-md shadow-sky-500/20 transition-all active:scale-95"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-slate-950 text-sm font-bold shadow-md shadow-sky-500/20 transition-all active:scale-95 cursor-pointer"
             >
-              <Play className="w-3.5 h-3.5 fill-current" />
+              <Play className="w-4 h-4 fill-current" />
               <span>Run Simulation</span>
             </button>
           </>
@@ -266,9 +265,9 @@ export const Navbar = ({
             <button
               type="button"
               onClick={() => onSelectTab && onSelectTab('topology')}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#F8FAFC] border border-[#24344D] text-xs font-semibold transition-colors"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#19263A] hover:bg-[#24344D] text-[#F8FAFC] border border-[#24344D] text-sm font-semibold transition-colors cursor-pointer"
             >
-              <Network className="w-3.5 h-3.5 text-[#38BDF8]" />
+              <Network className="w-4 h-4 text-[#38BDF8]" />
               <span>Topology Builder</span>
             </button>
 
@@ -276,9 +275,9 @@ export const Navbar = ({
               type="button"
               onClick={onStartSimulation}
               disabled={isCalculating}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-slate-950 text-xs font-bold shadow-md shadow-sky-500/20 transition-all active:scale-95"
+              className="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-slate-950 text-sm font-bold shadow-md shadow-sky-500/20 transition-all active:scale-95 cursor-pointer"
             >
-              <Play className="w-3.5 h-3.5 fill-current" />
+              <Play className="w-4 h-4 fill-current" />
               <span>Run Simulation</span>
             </button>
           </>

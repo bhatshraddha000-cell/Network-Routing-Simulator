@@ -4,10 +4,19 @@ import { NetworkEditor } from './pages/NetworkEditor';
 import { Dashboard } from './pages/Dashboard';
 import { ResultsPage } from './pages/ResultsPage';
 import { Toast } from './components/common/Toast';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { useTopology } from './hooks/useTopology';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('topology'); // 'dashboard' | 'topology' | 'simulator' | 'results'
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const savedTab = sessionStorage.getItem('netroute_active_tab');
+      return savedTab || 'topology';
+    } catch {
+      return 'topology';
+    }
+  }); // 'dashboard' | 'topology' | 'simulator' | 'results'
+
   const [toast, setToast] = useState(null);
   const fitViewRef = useRef(null);
 
@@ -21,17 +30,24 @@ function App() {
 
   const topology = useTopology(showToast);
 
+  const changeTab = useCallback((newTab) => {
+    setActiveTab(newTab);
+    try {
+      sessionStorage.setItem('netroute_active_tab', newTab);
+    } catch { }
+  }, []);
+
   const handleStartSimulation = useCallback(async () => {
     const ok = await topology.startSimulation();
     if (ok !== false) {
-      setActiveTab('simulator');
+      changeTab('simulator');
     }
-  }, [topology]);
+  }, [topology, changeTab]);
 
   const handleExitSimulation = useCallback(() => {
     topology.exitSimulation();
-    setActiveTab('topology');
-  }, [topology]);
+    changeTab('topology');
+  }, [topology, changeTab]);
 
   const handleSelectTab = useCallback(
     (tabId) => {
@@ -39,13 +55,13 @@ function App() {
         if (!topology.isSimulating) {
           handleStartSimulation();
         } else {
-          setActiveTab('simulator');
+          changeTab('simulator');
         }
       } else {
-        setActiveTab(tabId);
+        changeTab(tabId);
       }
     },
-    [topology.isSimulating, handleStartSimulation]
+    [topology.isSimulating, handleStartSimulation, changeTab]
   );
 
   return (
@@ -69,51 +85,53 @@ function App() {
         onResetAlgorithmResult={topology.resetAlgorithmResult}
       />
 
-      {/* Main View Port Container */}
-      <main className="flex-1 w-full h-[calc(100vh-3.5rem)] overflow-hidden relative">
-        {/* View 1: Overview Dashboard */}
-        {activeTab === 'dashboard' && (
-          <Dashboard
-            nodes={topology.nodes}
-            edges={topology.edges}
-            dijkstraResult={topology.dijkstraResult}
-            isTopologyModified={topology.isTopologyModified}
-            onNavigateToTopology={() => setActiveTab('topology')}
-            onNavigateToSimulator={handleStartSimulation}
-            onNavigateToResults={() => setActiveTab('results')}
-          />
-        )}
+      {/* Main View Port Container - flex flex-col ensures flex-1 children expand to full height */}
+      <main className="flex-1 w-full h-[calc(100vh-3.5rem)] flex flex-col overflow-hidden relative">
+        <ErrorBoundary onNavigateToDashboard={() => changeTab('dashboard')}>
+          {/* View 1: Overview Dashboard */}
+          {activeTab === 'dashboard' && (
+            <Dashboard
+              nodes={topology.nodes}
+              edges={topology.edges}
+              dijkstraResult={topology.dijkstraResult}
+              isTopologyModified={topology.isTopologyModified}
+              onNavigateToTopology={() => changeTab('topology')}
+              onNavigateToSimulator={handleStartSimulation}
+              onNavigateToResults={() => changeTab('results')}
+            />
+          )}
 
-        {/* View 4: Results & Reports Analysis */}
-        {activeTab === 'results' && (
-          <ResultsPage
-            result={topology.dijkstraResult}
-            nodes={topology.nodes}
-            edges={topology.edges}
-            isTopologyModified={topology.isTopologyModified}
-            onNavigateToEditor={() => setActiveTab('topology')}
-            onNavigateToSimulator={handleStartSimulation}
-          />
-        )}
+          {/* View 4: Results & Reports Analysis */}
+          {activeTab === 'results' && (
+            <ResultsPage
+              result={topology.dijkstraResult}
+              nodes={topology.nodes}
+              edges={topology.edges}
+              isTopologyModified={topology.isTopologyModified}
+              onNavigateToEditor={() => changeTab('topology')}
+              onNavigateToSimulator={handleStartSimulation}
+            />
+          )}
 
-        {/* Views 2 & 3: Network Canvas (Topology Builder & Simulator) */}
-        <div
-          className={
-            activeTab === 'topology' || activeTab === 'simulator'
-              ? 'h-full w-full flex flex-1 overflow-hidden'
-              : 'hidden'
-          }
-        >
-          <NetworkEditor
-            topology={topology}
-            showToast={showToast}
-            onNavigateToResults={() => setActiveTab('results')}
-            onNavigateToTopology={() => setActiveTab('topology')}
-            onRegisterFitView={(fn) => {
-              fitViewRef.current = fn;
-            }}
-          />
-        </div>
+          {/* Views 2 & 3: Network Canvas (Topology Builder & Simulator) */}
+          <div
+            className={
+              activeTab === 'topology' || activeTab === 'simulator'
+                ? 'h-full w-full flex flex-1 overflow-hidden'
+                : 'hidden'
+            }
+          >
+            <NetworkEditor
+              topology={topology}
+              showToast={showToast}
+              onNavigateToResults={() => changeTab('results')}
+              onNavigateToTopology={() => changeTab('topology')}
+              onRegisterFitView={(fn) => {
+                fitViewRef.current = fn;
+              }}
+            />
+          </div>
+        </ErrorBoundary>
       </main>
 
       {/* Global Toast Notifications */}

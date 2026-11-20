@@ -10,11 +10,13 @@ import {
 } from '@xyflow/react';
 import { GitFork, Sparkles, ShieldCheck, Flag, Radio } from 'lucide-react';
 
-// Custom compact node for the Shortest Path Tree
-const TreeNode = ({ data }) => {
-  const isSource = data.isSource;
-  const isDestination = data.isDestination;
-  const onDestPath = data.isDestinationPath;
+// Custom compact node for the Shortest Path Tree with defensive data access
+const TreeNode = ({ data = {} }) => {
+  const isSource = Boolean(data?.isSource);
+  const isDestination = Boolean(data?.isDestination);
+  const onDestPath = Boolean(data?.isDestinationPath);
+  const label = data?.label || 'Node';
+  const distance = data?.distance !== null && data?.distance !== undefined ? data.distance : 0;
 
   let borderColor = 'border-[#38BDF8]';
   let badgeColor = 'bg-[#38BDF8]/20 text-[#38BDF8]';
@@ -35,26 +37,26 @@ const TreeNode = ({ data }) => {
 
   return (
     <div
-      className={`px-3 py-2 rounded-xl bg-[#142136] border-2 shadow-xl select-none min-w-[120px] transition-all ${borderColor}`}
+      className={`px-3.5 py-2.5 rounded-xl bg-[#142136] border-2 shadow-xl select-none min-w-[130px] transition-all ${borderColor}`}
     >
-      <Handle type="target" position={Position.Left} className="!bg-[#38BDF8] !w-2 !h-2" />
-      <Handle type="source" position={Position.Right} className="!bg-[#38BDF8] !w-2 !h-2" />
+      <Handle type="target" position={Position.Left} className="!bg-[#38BDF8] !w-2.5 !h-2.5" />
+      <Handle type="source" position={Position.Right} className="!bg-[#38BDF8] !w-2.5 !h-2.5" />
 
-      <div className="flex items-center gap-2">
-        <div className="p-1 rounded bg-[#0B1220] text-[#38BDF8] shrink-0">
-          <Icon className="w-3.5 h-3.5" />
+      <div className="flex items-center gap-2.5">
+        <div className="p-1.5 rounded-lg bg-[#0B1220] text-[#38BDF8] shrink-0">
+          <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-1">
-            <span className="font-bold text-xs text-[#F1F5F9] truncate">{data.label}</span>
-            {onDestPath && <Sparkles className="w-2.5 h-2.5 text-[#22C55E] shrink-0" />}
+            <span className="font-bold text-sm text-[#F1F5F9] truncate">{label}</span>
+            {onDestPath && <Sparkles className="w-3 h-3 text-[#22C55E] shrink-0" />}
           </div>
           <div className="flex items-center justify-between gap-1 mt-0.5">
-            <span className={`text-[9px] px-1 py-0.2 rounded font-sans uppercase font-bold ${badgeColor}`}>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded font-sans uppercase font-bold ${badgeColor}`}>
               {isSource ? 'Root (S)' : isDestination ? 'Dest (D)' : 'Hop'}
             </span>
-            <span className="text-[10px] font-mono text-[#F1F5F9] font-bold">
-              d: {data.distance}
+            <span className="text-xs font-mono text-[#F1F5F9] font-bold">
+              d: {distance}
             </span>
           </div>
         </div>
@@ -74,10 +76,14 @@ export const ShortestPathTree = ({
   destinationId = 'D',
   shortestPath = [],
 }) => {
+  const table = Array.isArray(distanceTable) ? distanceTable : [];
+  const treeEdges = Array.isArray(shortestPathTree) ? shortestPathTree : [];
+  const path = Array.isArray(shortestPath) ? shortestPath : [];
+
   // Build tree layout dynamically from predecessors
   const { nodes, edges } = useMemo(() => {
-    const reachableTable = distanceTable.filter(
-      (r) => r.distance !== null && r.distance !== undefined && r.status === 'VISITED'
+    const reachableTable = table.filter(
+      (r) => r && r.distance !== null && r.distance !== undefined && r.status === 'VISITED'
     );
 
     if (reachableTable.length === 0) {
@@ -118,15 +124,15 @@ export const ShortestPathTree = ({
 
     // Create positioned nodes
     const flowNodes = [];
-    const destPathSet = new Set(shortestPath);
+    const destPathSet = new Set(path);
 
     levelGroups.forEach((nodeList, lvl) => {
       const totalInLvl = nodeList.length;
       nodeList.forEach((nId, idx) => {
         const row = reachableTable.find((r) => r.nodeId === nId);
-        const ySpacing = 90;
-        const startY = 150 - ((totalInLvl - 1) * ySpacing) / 2;
-        const posX = 60 + lvl * 210;
+        const ySpacing = 95;
+        const startY = 160 - ((totalInLvl - 1) * ySpacing) / 2;
+        const posX = 70 + lvl * 230;
         const posY = startY + idx * ySpacing;
 
         flowNodes.push({
@@ -144,68 +150,71 @@ export const ShortestPathTree = ({
       });
     });
 
-    // Create directed tree edges
-    const flowEdges = shortestPathTree.map((e) => {
-      const isPathBranch = Boolean(e.isDestinationPath);
+    // Create directed tree edges, ensuring source and target exist in flowNodes
+    const nodeSet = new Set(flowNodes.map((n) => n.id));
+    const flowEdges = treeEdges
+      .filter((e) => e && nodeSet.has(e.source) && nodeSet.has(e.target))
+      .map((e) => {
+        const isPathBranch = Boolean(e.isDestinationPath);
 
-      return {
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        type: 'smoothstep',
-        label: `${e.weight}`,
-        labelStyle: {
-          fill: isPathBranch ? '#22C55E' : '#38BDF8',
-          fontWeight: 700,
-          fontFamily: 'monospace',
-          fontSize: 11,
-        },
-        labelBgStyle: {
-          fill: '#101A2B',
-          stroke: isPathBranch ? '#22C55E' : '#26364B',
-          strokeWidth: 1,
-          rx: 4,
-        },
-        style: {
-          stroke: isPathBranch ? '#22C55E' : '#38BDF8',
-          strokeWidth: isPathBranch ? 3.5 : 2,
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: isPathBranch ? '#22C55E' : '#38BDF8',
-          width: 14,
-          height: 14,
-        },
-      };
-    });
+        return {
+          id: e.id || `spt-${e.source}-${e.target}`,
+          source: e.source,
+          target: e.target,
+          type: 'smoothstep',
+          label: `${e.weight ?? ''}`,
+          labelStyle: {
+            fill: isPathBranch ? '#22C55E' : '#38BDF8',
+            fontWeight: 700,
+            fontFamily: 'monospace',
+            fontSize: 12,
+          },
+          labelBgStyle: {
+            fill: '#101A2B',
+            stroke: isPathBranch ? '#22C55E' : '#26364B',
+            strokeWidth: 1,
+            rx: 4,
+          },
+          style: {
+            stroke: isPathBranch ? '#22C55E' : '#38BDF8',
+            strokeWidth: isPathBranch ? 3.5 : 2,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: isPathBranch ? '#22C55E' : '#38BDF8',
+            width: 14,
+            height: 14,
+          },
+        };
+      });
 
     return { nodes: flowNodes, edges: flowEdges };
-  }, [distanceTable, shortestPathTree, sourceId, destinationId, shortestPath]);
+  }, [table, treeEdges, sourceId, destinationId, path]);
 
   return (
-    <div className="bg-[#142136] rounded-xl border border-[#26364B] overflow-hidden select-none shadow-md flex flex-col h-[340px]">
-      <div className="p-3.5 border-b border-[#26364B] flex items-center justify-between bg-[#101A2B]/40">
-        <div className="flex items-center gap-2">
-          <GitFork className="w-4 h-4 text-[#38BDF8]" />
-          <h3 className="text-xs font-bold text-[#F1F5F9] uppercase tracking-wider">
+    <div className="bg-[#142136] rounded-xl border border-[#26364B] overflow-hidden select-none shadow-md flex flex-col h-[360px]">
+      <div className="p-4 border-b border-[#26364B] flex items-center justify-between bg-[#101A2B]/40">
+        <div className="flex items-center gap-2.5">
+          <GitFork className="w-5 h-5 text-[#38BDF8]" />
+          <h3 className="text-base font-bold text-[#F1F5F9] uppercase tracking-wider">
             Shortest-Path Tree (SPT) Rooted at Source
           </h3>
         </div>
-        <div className="flex items-center gap-3 text-xs text-[#94A3B8]">
+        <div className="flex items-center gap-4 text-xs text-[#94A3B8]">
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1 bg-[#22C55E] rounded-full inline-block" />
+            <span className="w-3 h-1 bg-[#22C55E] rounded-full inline-block" />
             <span className="text-emerald-400 font-semibold">Optimal Destination Route</span>
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-1 bg-[#38BDF8] rounded-full inline-block" />
+            <span className="w-3 h-1 bg-[#38BDF8] rounded-full inline-block" />
             <span>Reachable Tree Branches</span>
           </span>
         </div>
       </div>
 
-      <div className="flex-1 w-full h-full relative bg-[#0B1220]">
+      <div className="flex-1 w-full relative bg-[#0B1220] min-h-[280px]">
         {nodes.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-xs text-[#94A3B8]">
+          <div className="flex items-center justify-center h-full text-sm text-[#94A3B8]">
             No reachable routers found in the shortest path tree.
           </div>
         ) : (
@@ -215,7 +224,7 @@ export const ShortestPathTree = ({
               edges={edges}
               nodeTypes={treeNodeTypes}
               fitView
-              fitViewOptions={{ padding: 0.2 }}
+              fitViewOptions={{ padding: 0.25 }}
               minZoom={0.3}
               maxZoom={2}
             >

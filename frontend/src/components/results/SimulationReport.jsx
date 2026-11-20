@@ -5,7 +5,6 @@ import {
   FileCode,
   Printer,
   ChevronDown,
-  Check,
 } from 'lucide-react';
 
 export const SimulationReport = ({
@@ -21,6 +20,8 @@ export const SimulationReport = ({
 
   const timestamp = new Date().toISOString();
   const readableDate = new Date().toLocaleString();
+  const edgeList = Array.isArray(edges) ? edges : [];
+  const nodeList = Array.isArray(nodes) ? nodes : [];
 
   // 1. Export CSV
   const handleExportCSV = () => {
@@ -28,13 +29,13 @@ export const SimulationReport = ({
     csv += `Generated At: ${readableDate}\n`;
     csv += `Source: ${sourceId}, Destination: ${destinationId}\n`;
     csv += `Optimal Route: ${result.shortestPath?.join(' -> ') || 'None'}\n`;
-    csv += `Total Cost: ${result.totalCost !== null ? result.totalCost : 'Unreachable'}\n\n`;
+    csv += `Total Cost: ${result.totalCost !== null && result.totalCost !== undefined ? result.totalCost : 'Unreachable'}\n\n`;
 
     // Distance Table Section
     csv += `--- FINAL DISTANCE TABLE ---\n`;
     csv += `Router ID,Final Distance,Predecessor,Visit Order,Status\n`;
     (result.distanceTable || []).forEach((row) => {
-      const dist = row.distance !== null ? row.distance : 'Infinity';
+      const dist = row.distance !== null && row.distance !== undefined ? row.distance : 'Infinity';
       const pred = row.predecessor || 'None';
       const order = row.visitOrder || 'N/A';
       csv += `"${row.nodeId}","${dist}","${pred}","${order}","${row.status}"\n`;
@@ -47,10 +48,13 @@ export const SimulationReport = ({
     for (let i = 0; i < path.length - 1; i++) {
       const from = path[i];
       const to = path[i + 1];
-      const edge = edges.find(
-        (e) => (e.source === from && e.target === to) || (e.direction === 'BIDIRECTIONAL' && e.source === to && e.target === from)
-      );
-      const weight = edge ? Number(edge.weight) : 0;
+      const edge = edgeList.find((e) => {
+        const dir = e?.data?.direction || e?.direction || 'BIDIRECTIONAL';
+        if (e.source === from && e.target === to) return true;
+        if (dir === 'BIDIRECTIONAL' && e.source === to && e.target === from) return true;
+        return false;
+      });
+      const weight = Number(edge?.data?.weight ?? edge?.weight ?? 0);
       cumulative = Math.round((cumulative + weight) * 100) / 100;
       csv += `${i + 1},"${from}","${to}",${weight},${cumulative}\n`;
     }
@@ -77,29 +81,29 @@ export const SimulationReport = ({
       },
       results: {
         reachable: result.reachable,
-        shortestPath: result.shortestPath,
-        shortestPathEdges: result.shortestPathEdges,
+        shortestPath: result.shortestPath || [],
+        shortestPathEdges: result.shortestPathEdges || [],
         totalCost: result.totalCost,
         hopCount: result.shortestPath?.length > 1 ? result.shortestPath.length - 1 : 0,
         routersTraversed: result.shortestPath?.length || 0,
-        visitedOrder: result.visitedOrder,
+        visitedOrder: result.visitedOrder || [],
       },
-      distanceTable: result.distanceTable,
+      distanceTable: result.distanceTable || [],
       shortestPathTree: result.shortestPathTree || [],
       graphSnapshot: {
-        totalRouters: nodes.length,
-        totalLinks: edges.length,
-        nodes: nodes.map((n) => ({
+        totalRouters: nodeList.length,
+        totalLinks: edgeList.length,
+        nodes: nodeList.map((n) => ({
           id: n.id,
           label: n.data?.label || n.id,
           type: n.data?.type || 'intermediate',
         })),
-        edges: edges.map((e) => ({
+        edges: edgeList.map((e) => ({
           id: e.id,
           source: e.source,
           target: e.target,
-          weight: Number(e.weight || e.data?.weight || 1),
-          direction: e.direction || e.data?.direction || 'BIDIRECTIONAL',
+          weight: Number(e.data?.weight ?? e.weight ?? 1),
+          direction: e.data?.direction || e.direction || 'BIDIRECTIONAL',
         })),
       },
       algorithmMetadata: {
@@ -135,11 +139,11 @@ export const SimulationReport = ({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-slate-950 font-bold text-xs shadow-md shadow-sky-500/20 transition-all active:scale-95"
+        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#38BDF8] hover:bg-[#38BDF8]/90 text-slate-950 font-bold text-sm shadow-md shadow-sky-500/20 transition-all active:scale-95 cursor-pointer"
       >
-        <Download className="w-3.5 h-3.5" />
-        Export Report
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <Download className="w-4 h-4" />
+        <span>Export Report</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
@@ -148,28 +152,28 @@ export const SimulationReport = ({
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-52 rounded-xl bg-[#142136] border border-[#26364B] shadow-2xl z-50 py-1 divide-y divide-[#1B2B43] animate-fade-in text-xs font-medium">
+          <div className="absolute right-0 mt-2 w-56 rounded-xl bg-[#142136] border border-[#26364B] shadow-2xl z-50 py-1.5 divide-y divide-[#1B2B43] animate-fade-in text-sm font-medium">
             <button
               onClick={handleExportCSV}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[#F1F5F9] hover:bg-[#1B2B43] transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-[#F1F5F9] hover:bg-[#1B2B43] transition-colors text-left"
             >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Export as CSV Table</span>
             </button>
 
             <button
               onClick={handleExportJSON}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[#F1F5F9] hover:bg-[#1B2B43] transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-[#F1F5F9] hover:bg-[#1B2B43] transition-colors text-left"
             >
-              <FileCode className="w-4 h-4 text-[#38BDF8]" />
+              <FileCode className="w-4 h-4 text-[#38BDF8] shrink-0" />
               <span>Export as JSON Data</span>
             </button>
 
             <button
               onClick={handlePrintPDF}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[#F1F5F9] hover:bg-[#1B2B43] transition-colors"
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-[#F1F5F9] hover:bg-[#1B2B43] transition-colors text-left"
             >
-              <Printer className="w-4 h-4 text-amber-400" />
+              <Printer className="w-4 h-4 text-amber-400 shrink-0" />
               <span>Print / Save as PDF</span>
             </button>
           </div>
@@ -178,4 +182,3 @@ export const SimulationReport = ({
     </div>
   );
 };
-
