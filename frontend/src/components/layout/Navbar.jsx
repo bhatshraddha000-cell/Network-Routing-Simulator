@@ -33,7 +33,6 @@ export const Navbar = ({
 }) => {
   const navTabs = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-    { id: 'topology', label: 'Topology Builder', icon: Network },
     { id: 'simulator', label: 'Algorithm Simulator', icon: Cpu },
     { id: 'results', label: 'Results & Reports', icon: BarChart3 },
   ];
@@ -64,7 +63,9 @@ export const Navbar = ({
         <nav className="flex items-center bg-[#0B1220] p-1 rounded-xl border border-[#24344D]">
           {navTabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+            const isActive =
+              activeTab === tab.id ||
+              (tab.id === 'simulator' && activeTab === 'topology');
             return (
               <button
                 key={tab.id}
