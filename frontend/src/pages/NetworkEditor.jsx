@@ -291,24 +291,28 @@ const NetworkEditorContent = ({
         </div>
       </div>
 
-      {/* Scrollable Simulation Content */}
-      <div className="p-3.5 space-y-4 flex-1 overflow-y-auto">
-        {/* Final Summary Card when completed */}
-        {currentSnapshot?.isCompleted && (
-          <FinalPathSummary
-            snapshot={currentSnapshot}
-            sourceId="S"
-            destinationId="D"
-            totalRouters={nodes.length}
-            onNavigateToResults={onNavigateToResults}
-          />
-        )}
+      {/* Simulation Inspector Content Area */}
+      {activeSimulationTab === 'state' ? (
+        <div className="p-3.5 space-y-3.5 flex-1 min-h-0 flex flex-col overflow-hidden">
+          {/* Final Summary Card when completed */}
+          {currentSnapshot?.isCompleted && (
+            <div className="shrink-0">
+              <FinalPathSummary
+                snapshot={currentSnapshot}
+                sourceId="S"
+                destinationId="D"
+                totalRouters={nodes.length}
+                onNavigateToResults={onNavigateToResults}
+              />
+            </div>
+          )}
 
-        {/* Step Explanation with Mathematical Breakdown */}
-        <AlgorithmExplanation snapshot={currentSnapshot} />
+          {/* Step Explanation with Mathematical Breakdown */}
+          <div className="shrink-0">
+            <AlgorithmExplanation snapshot={currentSnapshot} />
+          </div>
 
-        {/* Tab 1: State & Distance Table */}
-        {activeSimulationTab === 'state' && (
+          {/* Dynamic Distance Table extending vertically to the bottom */}
           <DistanceTable
             nodes={nodes}
             distances={currentSnapshot?.distances || {}}
@@ -320,22 +324,19 @@ const NetworkEditorContent = ({
             sourceId="S"
             destinationId="D"
           />
-        )}
-
-        {/* Tab 2: Priority Queue & Event Timeline */}
-        {activeSimulationTab === 'queue-history' && (
-          <>
-            <PriorityQueuePanel
-              priorityQueue={currentSnapshot?.priorityQueue || []}
-            />
-            <ExecutionHistory
-              snapshots={simulationSnapshots}
-              currentStepIndex={currentStepIndex}
-              onSelectStep={goToStep}
-            />
-          </>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="p-3.5 space-y-4 flex-1 min-h-0 overflow-y-auto">
+          <PriorityQueuePanel
+            priorityQueue={currentSnapshot?.priorityQueue || []}
+          />
+          <ExecutionHistory
+            snapshots={simulationSnapshots}
+            currentStepIndex={currentStepIndex}
+            onSelectStep={goToStep}
+          />
+        </div>
+      )}
     </div>
   ) : (
     <PropertiesPanel

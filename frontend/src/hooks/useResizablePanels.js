@@ -6,7 +6,7 @@ export const LEFT_SIDEBAR_MAX = 500;
 
 export const RIGHT_SIDEBAR_MIN = 250;
 export const RIGHT_SIDEBAR_DEFAULT = 320;
-export const RIGHT_SIDEBAR_MAX = 500;
+export const RIGHT_SIDEBAR_MAX = 700;
 
 export const MIN_CANVAS_WIDTH = 320;
 
